@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { IconSend, IconLoader, IconUser, IconPaperclip, IconMoodSmile } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 
-const MessagesPage = () => {
+const MessagesContent = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -219,6 +219,14 @@ const MessagesPage = () => {
         )}
       </motion.div>
     </motion.div>
+  );
+};
+
+const MessagesPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MessagesContent />
+    </Suspense>
   );
 };
 
