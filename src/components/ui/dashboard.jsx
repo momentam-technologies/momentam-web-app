@@ -6,9 +6,26 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import dynamic from 'next/dynamic';
+
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
 
 const DashboardCard = ({ title, value, icon: Icon, change }) => (
   <motion.div 
@@ -211,42 +228,48 @@ const TrendGraph = ({ data }) => (
   </motion.div>
 );
 
-const PhotographerMap = ({ photographers }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: 0.6 }}
-    className="dashboard-card h-[400px]"
-  >
-    <h3 className="dashboard-subtitle">Available Photographers</h3>
-    <div className="h-[calc(100%-2rem)] w-full">
-      <MapContainer center={[-6.776012, 39.178326]} zoom={13} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        {photographers.map((photographer, index) => (
-          <Marker 
-            key={index} 
-            position={[photographer.lat, photographer.lng]}
-            icon={L.divIcon({
-              html: `<div class="bg-blue-500 rounded-full p-2"><span class="text-white">${photographer.name[0]}</span></div>`,
-              className: 'custom-icon'
-            })}
-          >
-            <Popup>
-              <div>
-                <h4 className="font-bold">{photographer.name}</h4>
-                <p>Rating: {photographer.rating}</p>
-                <p>Available: {photographer.available ? 'Yes' : 'No'}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
-  </motion.div>
-);
+const PhotographerMap = ({ photographers }) => {
+  if (typeof window === 'undefined') {
+    return null; // Return null on the server-side
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.6 }}
+      className="dashboard-card h-[400px]"
+    >
+      <h3 className="dashboard-subtitle">Available Photographers</h3>
+      <div className="h-[calc(100%-2rem)] w-full">
+        <MapContainer center={[-6.776012, 39.178326]} zoom={13} style={{ height: '100%', width: '100%' }}>
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          {photographers.map((photographer, index) => (
+            <Marker 
+              key={index} 
+              position={[photographer.lat, photographer.lng]}
+              icon={L.divIcon({
+                html: `<div class="bg-blue-500 rounded-full p-2"><span class="text-white">${photographer.name[0]}</span></div>`,
+                className: 'custom-icon'
+              })}
+            >
+              <Popup>
+                <div>
+                  <h4 className="font-bold">{photographer.name}</h4>
+                  <p>Rating: {photographer.rating}</p>
+                  <p>Available: {photographer.available ? 'Yes' : 'No'}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+    </motion.div>
+  );
+};
 
 const RecentTransactionsCard = ({ transactions }) => (
   <motion.div
