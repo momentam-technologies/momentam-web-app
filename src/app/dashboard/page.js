@@ -1,5 +1,15 @@
-import DashboardContent from "@/components/ui/dashboard";
+import dynamic from 'next/dynamic';
+
+// Dynamically import components that use browser-specific APIs
+const DynamicComponent = dynamic(() => import('../components/DynamicComponent'), {
+  ssr: false,
+});
 
 export default function Dashboard() {
-  return <DashboardContent />;
+  return (
+    <div>
+      {/* Other components */}
+      <DynamicComponent />
+    </div>
+  );
 }

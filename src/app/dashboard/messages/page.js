@@ -38,14 +38,14 @@ const MessagesPage = () => {
       }
     }
     setIsLoading(false);
-  }, [searchParams]);
+  }, [searchParams, demoConversations]);
 
   useEffect(() => {
     if (selectedConversation) {
       setMessages(demoMessages);
       scrollToBottom();
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, demoMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
