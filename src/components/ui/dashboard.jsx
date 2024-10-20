@@ -1,11 +1,14 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
-import { IconUsers, IconCamera, IconCalendar, IconCurrencyDollar, IconUserPlus, IconClock, IconBookmark, IconUserCheck, IconX } from '@tabler/icons-react';
+import { IconUsers, IconCamera, IconCalendar, IconCurrencyDollar, IconUserPlus, IconClock, IconBookmark, IconUserCheck, IconX, IconArrowUpRight, IconArrowDownRight, IconDotsVertical } from '@tabler/icons-react';
 import { getYearlyStats, getLatestUsers, getRecentActivities, subscribeToRealtimeUpdates } from '@/lib/appwrite';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const DashboardCard = ({ title, value, icon: Icon, change }) => (
   <motion.div 
@@ -186,23 +189,111 @@ const TrendGraph = ({ data }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: 0.6 }}
-    className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-md mt-8"
+    className="dashboard-card w-full mt-8"
   >
-    <h3 className="font-semibold text-lg text-gray-700 dark:text-gray-200 mb-4">12 Month Trend Overview</h3>
-    <ResponsiveContainer width="100%" height={400}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis yAxisId="left" />
-        <YAxis yAxisId="right" orientation="right" />
-        <Tooltip />
-        <Legend />
-        <Line yAxisId="left" type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
-        <Line yAxisId="left" type="monotone" dataKey="photographers" stroke="#82ca9d" activeDot={{ r: 8 }} />
-        <Line yAxisId="left" type="monotone" dataKey="bookings" stroke="#ffc658" activeDot={{ r: 8 }} />
-        <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#ff7300" strokeWidth={2} activeDot={{ r: 8 }} />
-      </LineChart>
-    </ResponsiveContainer>
+    <h3 className="dashboard-subtitle">12 Month Trend Overview</h3>
+    <div className="h-[400px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis yAxisId="left" />
+          <YAxis yAxisId="right" orientation="right" />
+          <Tooltip />
+          <Legend />
+          <Line yAxisId="left" type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
+          <Line yAxisId="left" type="monotone" dataKey="photographers" stroke="#82ca9d" activeDot={{ r: 8 }} />
+          <Line yAxisId="left" type="monotone" dataKey="bookings" stroke="#ffc658" activeDot={{ r: 8 }} />
+          <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#ff7300" strokeWidth={2} activeDot={{ r: 8 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  </motion.div>
+);
+
+const PhotographerMap = ({ photographers }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.6 }}
+    className="dashboard-card h-[400px]"
+  >
+    <h3 className="dashboard-subtitle">Available Photographers</h3>
+    <div className="h-[calc(100%-2rem)] w-full">
+      <MapContainer center={[-6.776012, 39.178326]} zoom={13} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {photographers.map((photographer, index) => (
+          <Marker 
+            key={index} 
+            position={[photographer.lat, photographer.lng]}
+            icon={L.divIcon({
+              html: `<div class="bg-blue-500 rounded-full p-2"><span class="text-white">${photographer.name[0]}</span></div>`,
+              className: 'custom-icon'
+            })}
+          >
+            <Popup>
+              <div>
+                <h4 className="font-bold">{photographer.name}</h4>
+                <p>Rating: {photographer.rating}</p>
+                <p>Available: {photographer.available ? 'Yes' : 'No'}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  </motion.div>
+);
+
+const RecentTransactionsCard = ({ transactions }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.8 }}
+    className="dashboard-card h-[400px] overflow-hidden flex flex-col"
+  >
+    <div className="flex justify-between items-center mb-6">
+      <h3 className="dashboard-subtitle mb-0">Recent Transactions</h3>
+      <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <IconDotsVertical size={20} />
+      </button>
+    </div>
+    <div className="space-y-4 overflow-y-auto flex-grow scrollbar-hide pr-2">
+      {transactions.map((transaction, index) => (
+        <motion.div
+          key={transaction.id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.1 }}
+          className="bg-white dark:bg-neutral-700 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between"
+        >
+          <div className="flex items-center space-x-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${transaction.amount > 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {transaction.amount > 0 ? <IconArrowUpRight size={24} /> : <IconArrowDownRight size={24} />}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800 dark:text-gray-200">{transaction.description}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{transaction.category}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{format(new Date(transaction.date), 'MMM dd, yyyy - HH:mm')}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className={`font-bold text-lg ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {transaction.amount > 0 ? '+' : '-'}TZS {Math.abs(transaction.amount).toLocaleString()}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{transaction.status}</p>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+      <button className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm">
+        View All Transactions
+      </button>
+    </div>
   </motion.div>
 );
 
@@ -224,18 +315,27 @@ export default function DashboardContent() {
     revenue: 0,
   });
   const [yearlyData, setYearlyData] = useState([]);
+  const [availablePhotographers, setAvailablePhotographers] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([
+    { id: 1, description: 'Booking payment from John Doe', amount: 50000, date: '2023-06-01T14:30:00', category: 'Booking', status: 'Completed' },
+    { id: 2, description: 'Photographer payout to Jane Smith', amount: -35000, date: '2023-06-02T09:15:00', category: 'Payout', status: 'Processed' },
+    { id: 3, description: 'Service fee', amount: 5000, date: '2023-06-03T11:45:00', category: 'Fee', status: 'Completed' },
+    { id: 4, description: 'Booking refund to Mike Johnson', amount: -20000, date: '2023-06-04T16:20:00', category: 'Refund', status: 'Pending' },
+    { id: 5, description: 'Premium subscription from Sarah Lee', amount: 10000, date: '2023-06-05T10:00:00', category: 'Subscription', status: 'Completed' },
+  ]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [yearlyStats, latestUsersData, recentActivitiesData] = await Promise.all([
+      const [yearlyStatsData, latestUsersData, recentActivitiesData] = await Promise.all([
         getYearlyStats(),
         getLatestUsers(5),
         getRecentActivities(5)
       ]);
 
-      const currentMonthStats = yearlyStats[yearlyStats.length - 1];
-      const previousMonthStats = yearlyStats[yearlyStats.length - 2];
+      console.log('Yearly stats:', yearlyStatsData);
+
+      const { yearlyData, currentMonthStats, previousMonthStats } = yearlyStatsData;
 
       setStats({
         totalUsers: currentMonthStats.users,
@@ -251,7 +351,7 @@ export default function DashboardContent() {
         revenue: calculatePercentageChange(previousMonthStats.revenue, currentMonthStats.revenue),
       });
 
-      setYearlyData(yearlyStats);
+      setYearlyData(yearlyData);
       setLatestUsers(latestUsersData);
       setRecentActivities(recentActivitiesData);
     } catch (error) {
@@ -266,34 +366,31 @@ export default function DashboardContent() {
     fetchDashboardData();
 
     const unsubscribe = subscribeToRealtimeUpdates((eventType, payload) => {
-      switch (eventType) {
-        case 'user_created':
-        case 'photographer_created':
-          setLatestUsers(prevUsers => {
-            const newUser = { ...payload, type: eventType === 'user_created' ? 'user' : 'photographer' };
-            return [newUser, ...prevUsers.slice(0, 4)];
-          });
-          setStats(prevStats => ({ ...prevStats, totalUsers: prevStats.totalUsers + 1 }));
-          break;
-        case 'booking_created':
-          setStats(prevStats => ({ ...prevStats, pendingBookings: prevStats.pendingBookings + 1 }));
-          setRecentActivities(prevActivities => {
-            const newActivity = {
-              type: 'booking',
-              description: `New booking: ${payload.package} by ${JSON.parse(payload.userDetails).name}`,
-              time: payload.$createdAt
-            };
-            return [newActivity, ...prevActivities.slice(0, 4)];
-          });
-          break;
-      }
+      // Handle real-time updates here
+      console.log('Received real-time update:', eventType, payload);
+      fetchDashboardData(); // Refresh data on any update
     });
 
     return () => unsubscribe();
   }, [fetchDashboardData]);
 
+  useEffect(() => {
+    // Fetch available photographers
+    const fetchPhotographers = async () => {
+      // Replace this with actual API call
+      const demoPhotographers = [
+        { name: 'John Doe', lat: -6.776012, lng: 39.178326, rating: 4.5, available: true },
+        { name: 'Jane Smith', lat: -6.786012, lng: 39.188326, rating: 4.8, available: true },
+        // Add more demo photographers as needed
+      ];
+      setAvailablePhotographers(demoPhotographers);
+    };
+    fetchPhotographers();
+  }, []);
+
   const calculatePercentageChange = (oldValue, newValue) => {
-    if (oldValue === 0) return 100; // If old value was 0, consider it as 100% increase
+    if (oldValue === 0 && newValue === 0) return 0;
+    if (oldValue === 0) return 100;
     return Math.round(((newValue - oldValue) / oldValue) * 100);
   };
 
@@ -312,9 +409,9 @@ export default function DashboardContent() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-3xl font-bold text-gray-900 dark:text-white mb-8"
+          className="dashboard-title"
         >
-          Dashboard Overview
+          Overview
         </motion.h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -325,6 +422,11 @@ export default function DashboardContent() {
         </div>
 
         <TrendGraph data={yearlyData} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          <PhotographerMap photographers={availablePhotographers} />
+          <RecentTransactionsCard transactions={recentTransactions} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           <LatestUsersCard users={latestUsers} />

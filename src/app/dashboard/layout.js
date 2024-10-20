@@ -2,17 +2,19 @@
 import React from 'react';
 import Sidebar from '@/components/global/Sidebar';
 import Navbar from '@/components/global/Navbar';
+import Footer from '@/components/global/Footer';
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+    <div className="flex flex-col h-screen bg-neutral-800">
+      <Navbar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto scrollbar-hide">
           {children}
         </main>
       </div>
+      <Footer />
     </div>
   );
 }
