@@ -320,6 +320,14 @@ const RecentTransactionsCard = ({ transactions }) => (
   </motion.div>
 );
 
+// Wrap any code that uses `window` in a check
+const isBrowser = typeof window !== 'undefined';
+
+// Use this check before accessing `window` anywhere in the file
+if (isBrowser) {
+  // Your code that uses `window`
+}
+
 export default function DashboardContent() {
   const [stats, setStats] = useState({
     totalUsers: 0,
