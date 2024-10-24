@@ -1,57 +1,41 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import bcrypt from "bcryptjs";
+import { addAdminUser, getAdminUsers } from "@/lib/appwrite";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { SparklesCore } from "@/components/ui/sparkles";
-// Remove or replace this import if you don't have a Momentam icon component
-// import { IconBrandMomentum } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export default function SetupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsSmallScreen(window.innerWidth <= 800);
+    const checkSuperAdminExists = async () => {
+      const { admins } = await getAdminUsers(1, 0);
+      if (admins.length > 0) {
+        router.push("/login"); // Redirect to login if super admin already exists
+      }
     };
-
-    handleResize(); // Check screen size on initial render
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    checkSuperAdminExists();
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-
-    if (result.error) {
-      setError("Invalid email or password");
-    } else {
-      window.location.href = "/dashboard"; // Redirect to dashboard on successful login
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await addAdminUser({ name, email, password: hashedPassword, role: "superadmin" });
+      router.push("/login"); // Redirect to login after creation
+    } catch (error) {
+      setError("Failed to create super admin. Please try again.");
+      console.error("Error creating super admin:", error);
     }
   };
-
-  if (isSmallScreen) {
-    return (
-      <div className="h-screen w-full bg-black flex items-center justify-center">
-        <div className="text-center p-4">
-          <h2 className="text-2xl font-bold mb-2 text-white">Notice</h2>
-          <p className="text-lg text-white">
-            Momentam HQ can be accessed by computer screens and not small screens. Kindly switch to a larger device.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen w-full bg-black flex px-2 items-center justify-center overflow-hidden">
@@ -68,39 +52,49 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* Login card */}
+      {/* Setup card */}
       <div className="max-w-md w-full mx-auto rounded-2xl p-4 md:p-8 shadow-lg bg-white/10 backdrop-blur-md relative z-10">
-        <h2 className="font-bold text-xl text-white mb-2">
-          Welcome to Momentam HQ
-        </h2>
+        <h2 className="font-bold text-xl text-white mb-2">Setup Super Admin</h2>
         <p className="text-white/80 text-sm max-w-sm mb-6">
-          Login to access the Momentam administration system
+          Create the initial super admin account to manage the system.
         </p>
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <LabelInputContainer>
+            <Label htmlFor="name" className="text-white">Name</Label>
+            <Input
+              id="name"
+              placeholder="Your Name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+            />
+          </LabelInputContainer>
+          <LabelInputContainer>
             <Label htmlFor="email" className="text-white">Email Address</Label>
-            <Input 
-              id="email" 
-              placeholder="you@example.com" 
+            <Input
+              id="email"
+              placeholder="you@example.com"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
             />
           </LabelInputContainer>
           <LabelInputContainer>
             <Label htmlFor="password" className="text-white">Password</Label>
-            <Input 
-              id="password" 
-              placeholder="••••••••" 
+            <Input
+              id="password"
+              placeholder="••••••••"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
             />
           </LabelInputContainer>
@@ -109,14 +103,10 @@ export default function LoginPage() {
             className="bg-gradient-to-br relative group/btn from-black to-neutral-600 block w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset]"
             type="submit"
           >
-            Sign In
+            Create Super Admin
             <BottomGradient />
           </button>
         </form>
-
-        <p className="text-sm text-center text-white/60 mt-6">
-          Need assistance? Contact the system administrator.
-        </p>
       </div>
     </div>
   );
