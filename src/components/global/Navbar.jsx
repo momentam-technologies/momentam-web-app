@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { getUnreadMessagesCount } from '@/lib/appwrite'; // You'll need to implement this function
 import { useRouter } from 'next/navigation';
+import { logoutUser } from '@/lib/auth'; // Import the logoutUser function
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -45,6 +46,11 @@ const Navbar = () => {
     { id: 2, sender: 'Jane Smith', message: 'Can you help me with my account?', time: '1 day ago' },
     { id: 3, sender: 'Mike Johnson', message: 'Thanks for your quick response!', time: '3 days ago' },
   ];
+
+  const handleLogout = () => {
+    logoutUser();
+    router.push('/login');
+  };
 
   return (
     <header className="bg-neutral-100 dark:bg-neutral-800 shadow-md p-4 flex justify-between items-center transition-colors duration-200">
@@ -130,10 +136,13 @@ const Navbar = () => {
                 <IconSettings className="inline-block mr-2" size={16} />
                 Settings
               </Link>
-              <Link href="/logout" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <button 
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 <IconLogout className="inline-block mr-2" size={16} />
                 Logout
-              </Link>
+              </button>
             </div>
           )}
         </div>

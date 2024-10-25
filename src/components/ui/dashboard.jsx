@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import dynamic from 'next/dynamic';
+import { getCurrentUser } from '@/lib/auth';
 
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
@@ -329,6 +330,7 @@ if (isBrowser) {
 }
 
 export default function DashboardContent() {
+  const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activePhotographers: 0,
@@ -354,6 +356,10 @@ export default function DashboardContent() {
     { id: 4, description: 'Booking refund to Mike Johnson', amount: -20000, date: '2023-06-04T16:20:00', category: 'Refund', status: 'Pending' },
     { id: 5, description: 'Premium subscription from Sarah Lee', amount: 10000, date: '2023-06-05T10:00:00', category: 'Subscription', status: 'Completed' },
   ]);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -397,22 +403,18 @@ export default function DashboardContent() {
     fetchDashboardData();
 
     const unsubscribe = subscribeToRealtimeUpdates((eventType, payload) => {
-      // Handle real-time updates here
       console.log('Received real-time update:', eventType, payload);
-      fetchDashboardData(); // Refresh data on any update
+      fetchDashboardData();
     });
 
     return () => unsubscribe();
   }, [fetchDashboardData]);
 
   useEffect(() => {
-    // Fetch available photographers
     const fetchPhotographers = async () => {
-      // Replace this with actual API call
       const demoPhotographers = [
         { name: 'John Doe', lat: -6.776012, lng: 39.178326, rating: 4.5, available: true },
         { name: 'Jane Smith', lat: -6.786012, lng: 39.188326, rating: 4.8, available: true },
-        // Add more demo photographers as needed
       ];
       setAvailablePhotographers(demoPhotographers);
     };
@@ -442,7 +444,7 @@ export default function DashboardContent() {
           transition={{ duration: 0.5 }}
           className="dashboard-title"
         >
-          Overview
+          Welcome, {user?.name}
         </motion.h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

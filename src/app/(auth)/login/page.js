@@ -1,25 +1,25 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { SparklesCore } from "@/components/ui/sparkles";
-// Remove or replace this import if you don't have a Momentam icon component
-// import { IconBrandMomentum } from "@tabler/icons-react";
+import { loginUser } from "@/lib/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth <= 800);
     };
 
-    handleResize(); // Check screen size on initial render
+    handleResize();
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
@@ -27,16 +27,21 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-
-    if (result.error) {
-      setError("Invalid email or password");
-    } else {
-      window.location.href = "/dashboard"; // Redirect to dashboard on successful login
+    setError("");
+    try {
+      console.log('Attempting login with email:', email);
+      const result = await loginUser(email, password);
+      console.log('Login result:', result);
+      if (result.success) {
+        console.log('Login successful, redirecting to dashboard');
+        router.push("/dashboard");
+      } else {
+        console.error('Login failed:', result.error);
+        setError(result.error || "Invalid email or password");
+      }
+    } catch (error) {
+      console.error('Unexpected error during login:', error);
+      setError("An unexpected error occurred during login. Please try again.");
     }
   };
 
@@ -55,7 +60,6 @@ export default function LoginPage() {
 
   return (
     <div className="h-screen w-full bg-black flex px-2 items-center justify-center overflow-hidden">
-      {/* Sparkles background */}
       <div className="absolute inset-0 w-full h-full">
         <SparklesCore
           id="tsparticles"
@@ -68,13 +72,12 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* Login card */}
       <div className="max-w-md w-full mx-auto rounded-2xl p-4 md:p-8 shadow-lg bg-white/10 backdrop-blur-md relative z-10">
         <h2 className="font-bold text-xl text-white mb-2">
           Welcome to Momentam HQ
         </h2>
         <p className="text-white/80 text-sm max-w-sm mb-6">
-          Login to access the Momentam administration system
+          Login to access the Momentam system
         </p>
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
