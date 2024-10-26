@@ -78,18 +78,18 @@ export const getRevenue = async () => {
     }
 };
 
-export const getLatestUsers = async (limit = 5) => {
+export const getLatestUsers = async (limit = 5, offset = 0) => {
     try {
         const [users, photographers] = await Promise.all([
             userDatabases.listDocuments(
                 config.user.databaseId,
                 config.user.userCollectionId,
-                [Query.orderDesc('$createdAt'), Query.limit(limit)]
+                [Query.orderDesc('$createdAt'), Query.limit(limit), Query.offset(offset)]
             ),
             photographerDatabases.listDocuments(
                 config.photographer.databaseId,
                 config.photographer.userCollectionId,
-                [Query.orderDesc('$createdAt'), Query.limit(limit)]
+                [Query.orderDesc('$createdAt'), Query.limit(limit), Query.offset(offset)]
             )
         ]);
 
@@ -105,7 +105,7 @@ export const getLatestUsers = async (limit = 5) => {
 
         return usersWithActivities
             .sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt))
-            .slice(0, limit);
+            .slice(offset, offset + limit);
     } catch (error) {
         console.error(`Error in getLatestUsers: ${error.message}`);
         throw new Error(`Failed to get latest users: ${error.message}`);
@@ -159,7 +159,7 @@ const getRecentActivitiesForUser = async (userId, userType, limit = 5) => {
     }
 };
 
-export const getRecentActivities = async (limit = 5) => {
+export const getRecentActivities = async (limit = 5, offset = 0) => {
     try {
         const [userBookings, photographerLiveStatus, userRegistrations, photographerRegistrations] = await Promise.all([
             userDatabases.listDocuments(config.user.databaseId, config.user.bookingsCollectionId, [Query.orderDesc('$createdAt'), Query.limit(limit)]),
@@ -191,7 +191,7 @@ export const getRecentActivities = async (limit = 5) => {
             }))
         ];
 
-        return allActivities.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, limit);
+        return allActivities.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(offset, offset + limit);
     } catch (error) {
         console.error(`Error in getRecentActivities: ${error.message}`);
         throw new Error(`Failed to get recent activities: ${error.message}`);
@@ -226,11 +226,25 @@ export const subscribeToRealtimeUpdates = (callback) => {
         photographerClient.subscribe([`databases.${config.photographer.databaseId}.collections.${config.photographer.userCollectionId}.documents`], (response) => {
             if (response.events.includes('databases.*.collections.*.documents.*.create')) {
                 callback('photographer_created', response.payload);
+            } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
+                callback('photographer_updated', response.payload);
+            } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
+                callback('photographer_deleted', response.payload);
             }
         }),
         userClient.subscribe([`databases.${config.user.databaseId}.collections.${config.user.bookingsCollectionId}.documents`], (response) => {
             if (response.events.includes('databases.*.collections.*.documents.*.create')) {
                 callback('booking_created', response.payload);
+            } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
+                callback('booking_updated', response.payload);
+            } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
+                callback('booking_deleted', response.payload);
+            }
+        }),
+        photographerClient.subscribe([`databases.${config.photographer.databaseId}.collections.${config.photographer.livePhotographersCollectionId}.documents`], (response) => {
+            if (response.events.includes('databases.*.collections.*.documents.*.create') || 
+                response.events.includes('databases.*.collections.*.documents.*.update')) {
+                callback('photographer_status_changed', response.payload);
             }
         })
     ];
@@ -314,10 +328,16 @@ export const getYearlyStats = async () => {
             });
         }
 
+        const currentMonthStats = monthlyStats[11];
+        const previousMonthStats = monthlyStats[10];
+        const lastYearSameMonthStats = monthlyStats[0];
+
         return {
             yearlyData: monthlyStats,
-            currentMonthStats: monthlyStats[11],
-            previousMonthStats: monthlyStats[10]
+            currentMonthStats,
+            previousMonthStats,
+            lastYearSameMonthStats,
+            allData: monthlyStats
         };
     } catch (error) {
         console.error(`Error in getYearlyStats: ${error.message}`);
@@ -434,6 +454,95 @@ export const sendMessage = async (conversationId, content) => {
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;
+  }
+};
+
+// Add this function to fetch recent transactions
+export const getRecentTransactions = async (limit = 5) => {
+  try {
+    const completedBookings = await userDatabases.listDocuments(
+      config.user.databaseId,
+      config.user.bookingsCollectionId,
+      [
+        Query.equal('status', 'completed'),
+        Query.orderDesc('$createdAt'),
+        Query.limit(limit)
+      ]
+    );
+
+    return completedBookings.documents.map(booking => ({
+      id: booking.$id,
+      description: `Booking payment for ${booking.package}`,
+      amount: parseFloat(booking.price),
+      date: booking.$createdAt,
+      category: 'Booking',
+      status: 'Completed',
+      userDetails: JSON.parse(booking.userDetails)
+    }));
+  } catch (error) {
+    console.error(`Error in getRecentTransactions: ${error.message}`);
+    throw new Error(`Failed to fetch recent transactions: ${error.message}`);
+  }
+};
+
+export const getLivePhotographers = async () => {
+  try {
+    const photographers = await photographerDatabases.listDocuments(
+      config.photographer.databaseId,
+      config.photographer.livePhotographersCollectionId,
+      [Query.equal('bookingStatus', 'available')]
+    );
+    return photographers.documents;
+  } catch (error) {
+    console.error(`Error in getLivePhotographers: ${error.message}`);
+    throw new Error(`Failed to get live photographers: ${error.message}`);
+  }
+};
+
+export const getReadableAddress = async (location) => {
+  try {
+    const [latitude, longitude] = location.split(',').map(Number);
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+    const data = await response.json();
+    return data.display_name || `${latitude}, ${longitude}`;
+  } catch (error) {
+    console.error('Error getting readable address:', error);
+    return location;
+  }
+};
+
+export const getUserRequests = async () => {
+  try {
+    const requests = await userDatabases.listDocuments(
+      config.user.databaseId,
+      config.user.bookingsCollectionId,
+      [Query.equal('status', 'pending'), Query.orderDesc('$createdAt')]
+    );
+    return Promise.all(requests.documents.map(async request => ({
+      name: JSON.parse(request.userDetails).name,
+      lat: request.location.split(',')[0],
+      lng: request.location.split(',')[1],
+      requestType: request.package,
+      timestamp: request.$createdAt,
+      eventLocation: request.eventLocation || await getReadableAddress(request.location)
+    })));
+  } catch (error) {
+    console.error(`Error in getUserRequests: ${error.message}`);
+    throw new Error(`Failed to get user requests: ${error.message}`);
+  }
+};
+
+export const getActiveBookings = async () => {
+  try {
+    const bookings = await userDatabases.listDocuments(
+      config.user.databaseId,
+      config.user.bookingsCollectionId,
+      [Query.notEqual('status', 'completed'), Query.notEqual('status', 'cancelled')]
+    );
+    return bookings.documents;
+  } catch (error) {
+    console.error(`Error in getActiveBookings: ${error.message}`);
+    throw new Error(`Failed to get active bookings: ${error.message}`);
   }
 };
 
