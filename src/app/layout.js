@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
                 For the best experience, please access Momentam on a larger screen.
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 animate-slide-up delay-200">
-                We're optimizing for mobile devices. Thank you for your patience.
+                We&apos;re optimizing for mobile devices. Thank you for your patience.
               </p>
             </div>
           </div>
