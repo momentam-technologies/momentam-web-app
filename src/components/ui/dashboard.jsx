@@ -24,6 +24,7 @@ import { CSVLink } from "react-csv";
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import Joyride, { STATUS } from 'react-joyride';
+import { getReadableAddress } from '@/lib/appwrite';
 
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
@@ -406,6 +407,16 @@ const TrendGraph = ({ data }) => {
   );
 };
 
+const AnimatedMarker = ({ children }) => (
+  <motion.div
+    initial={{ scale: 0, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+  >
+    {children}
+  </motion.div>
+);
+
 const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
   if (typeof window === 'undefined') {
     return null;
@@ -426,40 +437,45 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           {photographers.map((photographer, index) => (
-            <Marker 
-              key={`photographer-${photographer.$id}`}
-              position={[photographer.location.split(',')[0], photographer.location.split(',')[1]]}
-              icon={L.divIcon({
-                html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold text-sm">${photographer.name[0]}</div>`,
-                className: 'custom-icon'
-              })}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h4 className="font-bold text-lg mb-2">{photographer.name}</h4>
-                  <p className="mb-1">Rating: {photographer.rating || 'N/A'} ⭐</p>
-                  <p className="text-sm text-green-600">Available: Yes</p>
-                </div>
-              </Popup>
-            </Marker>
+            <AnimatedMarker key={`photographer-${photographer.$id}`}>
+              <Marker 
+                position={[photographer.location.split(',')[0], photographer.location.split(',')[1]]}
+                icon={L.divIcon({
+                  html: `<div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white font-bold text-sm shadow-lg">${photographer.name[0]}</div>`,
+                  className: 'custom-icon'
+                })}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h4 className="font-bold text-lg mb-2">{photographer.name}</h4>
+                    <p className="mb-1">Rating: {photographer.rating || 'N/A'} ⭐</p>
+                    <p className="text-sm text-green-600">Available: Yes</p>
+                    <p className="text-sm mt-2">{getReadableAddress(photographer.location)}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            </AnimatedMarker>
           ))}
           {userRequests.map((request, index) => (
-            <Marker
-              key={`request-${index}`}
-              position={[request.lat, request.lng]}
-              icon={L.divIcon({
-                html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-green-500 text-white font-bold text-sm">${request.name[0]}</div>`,
-                className: 'custom-icon'
-              })}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h4 className="font-bold text-lg mb-2">{request.name}</h4>
-                  <p className="mb-1">Request: {request.requestType}</p>
-                  <p className="text-sm text-gray-600">{format(new Date(request.timestamp), 'PPp')}</p>
-                </div>
-              </Popup>
-            </Marker>
+            <AnimatedMarker key={`request-${index}`}>
+              <Marker
+                position={[request.lat, request.lng]}
+                icon={L.divIcon({
+                  html: `<div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white font-bold text-sm shadow-lg">${request.name[0]}</div>`,
+                  className: 'custom-icon'
+                })}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <h4 className="font-bold text-lg mb-2">{request.name}</h4>
+                    <p className="mb-1">Request: {request.requestType}</p>
+                    <p className="text-sm text-gray-600">{format(new Date(request.timestamp), 'PPp')}</p>
+                    <p className="text-sm mt-2">{getReadableAddress(`${request.lat},${request.lng}`)}</p>
+                    <p className="text-sm mt-1">Event Location: {request.eventLocation}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            </AnimatedMarker>
           ))}
         </MapContainer>
       </div>
