@@ -4,7 +4,7 @@
 
 The Momentam Administration System is designed to control and monitor two mobile applications: the Photographer app and the User app. This system will provide comprehensive management capabilities, analytics, and support features for the entire Momentam platform.
 
-## 2. System Components
+## 2. System Components.
 
 ### 2.1 Backend
 - Appwrite: Main backend service for data storage, authentication, and real-time updates
