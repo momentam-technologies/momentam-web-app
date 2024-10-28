@@ -20,10 +20,11 @@ const config = {
         bookingsCollectionId: '66f155ee0008ff041e8b',
         notificationCollectionId: '66fead61001e5ff6b52d',
     },
-    messages: {
-        collectionId: 'your_messages_collection_id',
-        conversationsCollectionId: 'your_conversations_collection_id',
-    },
+    admin: {
+        projectId: 'your_admin_project_id',
+        databaseId: 'your_admin_database_id',
+        userCollectionId: 'your_admin_user_collection_id',
+    }
 };
 
 // Initialize Appwrite clients
@@ -33,518 +34,416 @@ const createClient = (projectId) => {
 
 const photographerClient = createClient(config.photographer.projectId);
 const userClient = createClient(config.user.projectId);
+const adminClient = createClient(config.admin.projectId);
 
 const photographerDatabases = new Databases(photographerClient);
 const userDatabases = new Databases(userClient);
+const adminDatabases = new Databases(adminClient);
 
-// Helper functions
-const getDocumentCount = async (databases, databaseId, collectionId, queries = []) => {
+// Admin Functions for User Management
+export const createUser = async (userData) => {
     try {
-        const result = await databases.listDocuments(databaseId, collectionId, [...queries, Query.limit(1)]);
-        return result.total;
-    } catch (error) {
-        console.error(`Error in getDocumentCount: ${error.message}`);
-        throw new Error(`Failed to get document count: ${error.message}`);
-    }
-};
-
-export const getUserCount = () => getDocumentCount(userDatabases, config.user.databaseId, config.user.userCollectionId);
-
-export const getActivePhotographersCount = () => getDocumentCount(
-    photographerDatabases, 
-    config.photographer.databaseId, 
-    config.photographer.livePhotographersCollectionId, 
-    [Query.equal('bookingStatus', 'available')]
-);
-
-export const getPendingBookingsCount = () => getDocumentCount(
-    userDatabases, 
-    config.user.databaseId, 
-    config.user.bookingsCollectionId, 
-    [Query.equal('status', 'pending')]
-);
-
-export const getRevenue = async () => {
-    try {
-        const completedBookings = await userDatabases.listDocuments(
-            config.user.databaseId,
-            config.user.bookingsCollectionId,
-            [Query.equal('status', 'completed')]
-        );
-        return completedBookings.documents.reduce((total, booking) => total + parseFloat(booking.price), 0);
-    } catch (error) {
-        console.error(`Error in getRevenue: ${error.message}`);
-        throw new Error(`Failed to calculate revenue: ${error.message}`);
-    }
-};
-
-export const getLatestUsers = async (limit = 5, offset = 0) => {
-    try {
-        const [users, photographers] = await Promise.all([
-            userDatabases.listDocuments(
-                config.user.databaseId,
-                config.user.userCollectionId,
-                [Query.orderDesc('$createdAt'), Query.limit(limit), Query.offset(offset)]
-            ),
-            photographerDatabases.listDocuments(
-                config.photographer.databaseId,
-                config.photographer.userCollectionId,
-                [Query.orderDesc('$createdAt'), Query.limit(limit), Query.offset(offset)]
-            )
-        ]);
-
-        const allUsers = [
-            ...users.documents.map(user => ({ ...user, type: 'user' })),
-            ...photographers.documents.map(photographer => ({ ...photographer, type: 'photographer' }))
-        ];
-
-        const usersWithActivities = await Promise.all(allUsers.map(async user => ({
-            ...user,
-            recentActivities: await getRecentActivitiesForUser(user.$id, user.type, 5)
-        })));
-
-        return usersWithActivities
-            .sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt))
-            .slice(offset, offset + limit);
-    } catch (error) {
-        console.error(`Error in getLatestUsers: ${error.message}`);
-        throw new Error(`Failed to get latest users: ${error.message}`);
-    }
-};
-
-const getRecentActivitiesForUser = async (userId, userType, limit = 5) => {
-    try {
-        let activities = [];
-        if (userType === 'user') {
-            const bookings = await userDatabases.listDocuments(
-                config.user.databaseId,
-                config.user.bookingsCollectionId,
-                [Query.equal('userId', userId), Query.orderDesc('$createdAt'), Query.limit(limit)]
-            );
-            activities = bookings.documents.map(booking => ({
-                type: 'Booking',
-                description: `Made a booking for ${booking.package}`,
-                time: booking.$createdAt
-            }));
-        } else if (userType === 'photographer') {
-            const [bookings, statusUpdates] = await Promise.all([
-                userDatabases.listDocuments(
-                    config.user.databaseId,
-                    config.user.bookingsCollectionId,
-                    [Query.equal('photographerId', userId), Query.orderDesc('$createdAt'), Query.limit(limit)]
-                ),
-                photographerDatabases.listDocuments(
-                    config.photographer.databaseId,
-                    config.photographer.livePhotographersCollectionId,
-                    [Query.equal('photographerId', userId), Query.orderDesc('$createdAt'), Query.limit(limit)]
-                )
-            ]);
-            activities = [
-                ...bookings.documents.map(booking => ({
-                    type: 'Booking',
-                    description: `Accepted a booking for ${booking.package}`,
-                    time: booking.$createdAt
-                })),
-                ...statusUpdates.documents.map(status => ({
-                    type: 'Status Update',
-                    description: `Changed status to ${status.bookingStatus}`,
-                    time: status.$createdAt
-                }))
-            ];
-        }
-        return activities.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, limit);
-    } catch (error) {
-        console.error(`Error fetching user activities: ${error.message}`);
-        return [];
-    }
-};
-
-export const getRecentActivities = async (limit = 5, offset = 0) => {
-    try {
-        const [userBookings, photographerLiveStatus, userRegistrations, photographerRegistrations] = await Promise.all([
-            userDatabases.listDocuments(config.user.databaseId, config.user.bookingsCollectionId, [Query.orderDesc('$createdAt'), Query.limit(limit)]),
-            photographerDatabases.listDocuments(config.photographer.databaseId, config.photographer.livePhotographersCollectionId, [Query.orderDesc('$createdAt'), Query.limit(limit)]),
-            userDatabases.listDocuments(config.user.databaseId, config.user.userCollectionId, [Query.orderDesc('$createdAt'), Query.limit(limit)]),
-            photographerDatabases.listDocuments(config.photographer.databaseId, config.photographer.userCollectionId, [Query.orderDesc('$createdAt'), Query.limit(limit)])
-        ]);
-
-        const allActivities = [
-            ...userBookings.documents.map(doc => ({
-                type: 'booking',
-                description: `New booking: ${doc.package} by ${JSON.parse(doc.userDetails).name}`,
-                time: doc.$createdAt
-            })),
-            ...photographerLiveStatus.documents.map(doc => ({
-                type: 'photographer_status',
-                description: `Photographer ${doc.name} is now ${doc.bookingStatus}`,
-                time: doc.$createdAt
-            })),
-            ...userRegistrations.documents.map(doc => ({
-                type: 'user_registration',
-                description: `New user registered: ${doc.name}`,
-                time: doc.$createdAt
-            })),
-            ...photographerRegistrations.documents.map(doc => ({
-                type: 'photographer_registration',
-                description: `New photographer registered: ${doc.name}`,
-                time: doc.$createdAt
-            }))
-        ];
-
-        return allActivities.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(offset, offset + limit);
-    } catch (error) {
-        console.error(`Error in getRecentActivities: ${error.message}`);
-        throw new Error(`Failed to get recent activities: ${error.message}`);
-    }
-};
-
-export const getUsers = async (limit = 20, offset = 0) => {
-    try {
-        const users = await userDatabases.listDocuments(
+        // Create user in user app
+        const userDoc = await userDatabases.createDocument(
             config.user.databaseId,
             config.user.userCollectionId,
-            [Query.limit(limit), Query.offset(offset), Query.orderDesc('$createdAt')]
+            ID.unique(),
+            {
+                name: userData.name,
+                email: userData.email,
+                phone: userData.phone,
+                avatar: userData.avatar,
+                status: 'active',
+                registrationComplete: true,
+                createdAt: new Date().toISOString(),
+                lastLogin: null,
+                recentLocations: JSON.stringify([])
+            }
         );
-        return { users: users.documents, total: users.total };
+
+        return userDoc;
     } catch (error) {
-        console.error(`Error in getUsers: ${error.message}`);
-        throw new Error(`Failed to get users: ${error.message}`);
+        console.error('Error creating user:', error);
+        throw error;
     }
 };
 
-export const subscribeToRealtimeUpdates = (callback) => {
-    const subscriptions = [
-        userClient.subscribe([`databases.${config.user.databaseId}.collections.${config.user.userCollectionId}.documents`], (response) => {
-            if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-                callback('user_created', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
-                callback('user_updated', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
-                callback('user_deleted', response.payload);
-            }
-        }),
-        photographerClient.subscribe([`databases.${config.photographer.databaseId}.collections.${config.photographer.userCollectionId}.documents`], (response) => {
-            if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-                callback('photographer_created', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
-                callback('photographer_updated', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
-                callback('photographer_deleted', response.payload);
-            }
-        }),
-        userClient.subscribe([`databases.${config.user.databaseId}.collections.${config.user.bookingsCollectionId}.documents`], (response) => {
-            if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-                callback('booking_created', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
-                callback('booking_updated', response.payload);
-            } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
-                callback('booking_deleted', response.payload);
-            }
-        }),
-        photographerClient.subscribe([`databases.${config.photographer.databaseId}.collections.${config.photographer.livePhotographersCollectionId}.documents`], (response) => {
-            if (response.events.includes('databases.*.collections.*.documents.*.create') || 
-                response.events.includes('databases.*.collections.*.documents.*.update')) {
-                callback('photographer_status_changed', response.payload);
-            }
-        })
-    ];
-
-    return () => subscriptions.forEach(unsubscribe => unsubscribe());
-};
-
-export const getUserDetails = async (userId) => {
+export const updateUser = async (userId, userData) => {
     try {
-        const user = await userDatabases.getDocument(config.user.databaseId, config.user.userCollectionId, userId);
-        const [bookings, photos, interactions, activities] = await Promise.all([
-            userDatabases.listDocuments(config.user.databaseId, config.user.bookingsCollectionId, [Query.equal('userId', userId)]),
-            userDatabases.listDocuments(config.user.databaseId, config.user.photoCollectionId, [Query.equal('userId', userId)]),
-            userDatabases.listDocuments(config.user.databaseId, 'photographer_interactions', [Query.equal('userId', userId)]),
-            userDatabases.listDocuments(config.user.databaseId, 'user_activities', [Query.equal('userId', userId), Query.orderDesc('$createdAt'), Query.limit(10)])
-        ]);
+        // First get the user to ensure valid ID
+        const user = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            [Query.equal('$id', userId)]
+        );
 
-        return {
-            ...user,
-            totalBookings: bookings.total,
-            completedBookings: bookings.documents.filter(b => b.status === 'completed').length,
-            cancelledBookings: bookings.documents.filter(b => b.status === 'cancelled').length,
-            photos: photos.documents,
-            photographersInteracted: interactions.documents.map(interaction => ({
-                name: interaction.photographerName,
-                avatar: interaction.photographerAvatar,
-                rating: interaction.rating
-            })),
-            recentActivities: activities.documents.map(a => ({
-                description: a.description,
-                time: a.$createdAt
-            }))
-        };
-    } catch (error) {
-        console.error(`Error in getUserDetails: ${error.message}`);
-        throw new Error(`Failed to get user details: ${error.message}`);
-    }
-};
+        if (user.documents.length === 0) {
+            throw new Error('User not found');
+        }
 
-export const updateUser = async (userId, updatedData) => {
-    try {
-        return await userDatabases.updateDocument(config.user.databaseId, config.user.userCollectionId, userId, updatedData);
+        // Handle avatar upload if it's a file
+        let avatarUrl = userData.avatar;
+        if (userData.avatar instanceof File) {
+            avatarUrl = await uploadToFirebase(userData.avatar);
+        }
+
+        const updatedUser = await userDatabases.updateDocument(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            userId,
+            {
+                name: userData.name,
+                email: userData.email,
+                phone: userData.phone,
+                avatar: avatarUrl,
+                lastUpdated: new Date().toISOString()
+            }
+        );
+
+        return updatedUser;
     } catch (error) {
-        console.error(`Error in updateUser: ${error.message}`);
-        throw new Error(`Failed to update user: ${error.message}`);
+        console.error('Error updating user:', error);
+        throw error;
     }
 };
 
 export const deleteUser = async (userId) => {
     try {
-        await userDatabases.deleteDocument(config.user.databaseId, config.user.userCollectionId, userId);
+        // First get the user to ensure valid ID
+        const user = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            [Query.equal('$id', userId)]
+        );
+
+        if (user.documents.length === 0) {
+            throw new Error('User not found');
+        }
+
+        // Delete user's bookings
+        const bookings = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.bookingsCollectionId,
+            [Query.equal('userId', userId)]
+        );
+
+        // Delete each booking
+        await Promise.all(bookings.documents.map(booking => 
+            userDatabases.deleteDocument(
+                config.user.databaseId,
+                config.user.bookingsCollectionId,
+                booking.$id
+            )
+        ));
+
+        // Finally delete the user
+        await userDatabases.deleteDocument(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            user.documents[0].$id
+        );
+
+        return { success: true };
     } catch (error) {
-        console.error(`Error in deleteUser: ${error.message}`);
-        throw new Error(`Failed to delete user: ${error.message}`);
+        console.error('Error deleting user:', error);
+        throw error;
     }
 };
 
 export const banUser = async (userId) => {
     try {
-        const user = await userDatabases.getDocument(config.user.databaseId, config.user.userCollectionId, userId);
-        return await userDatabases.updateDocument(config.user.databaseId, config.user.userCollectionId, userId, { ...user, status: 'banned' });
-    } catch (error) {
-        console.error(`Error in banUser: ${error.message}`);
-        throw new Error(`Failed to ban user: ${error.message}`);
-    }
-};
+        // First get the user to ensure valid ID
+        const user = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            [Query.equal('$id', userId)]
+        );
 
-export const getYearlyStats = async () => {
-    try {
-        const currentDate = new Date();
-        const monthlyStats = [];
-
-        for (let i = 11; i >= 0; i--) {
-            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 0);
-            
-            const stats = await fetchStatsForMonth(startDate, endDate);
-            monthlyStats.push({
-                name: startDate.toLocaleString('default', { month: 'short' }),
-                ...stats
-            });
+        if (user.documents.length === 0) {
+            throw new Error('User not found');
         }
 
-        const currentMonthStats = monthlyStats[11];
-        const previousMonthStats = monthlyStats[10];
-        const lastYearSameMonthStats = monthlyStats[0];
+        const updatedUser = await userDatabases.updateDocument(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            user.documents[0].$id,
+            { 
+                status: 'banned',
+                bannedAt: new Date().toISOString()
+            }
+        );
+
+        return updatedUser;
+    } catch (error) {
+        console.error('Error banning user:', error);
+        throw error;
+    }
+};
+
+export const unbanUser = async (userId) => {
+    try {
+        const updatedUser = await userDatabases.updateDocument(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            userId,
+            { 
+                status: 'active',
+                bannedAt: null
+            }
+        );
+
+        return updatedUser;
+    } catch (error) {
+        console.error('Error unbanning user:', error);
+        throw error;
+    }
+};
+
+// Function to get all users with pagination and filters
+export const getUsers = async (limit = 10, offset = 0, filters = {}) => {
+    try {
+        let queries = [Query.limit(limit), Query.offset(offset)];
+
+        if (filters.status) {
+            queries.push(Query.equal('status', filters.status));
+        }
+        if (filters.search) {
+            queries.push(Query.search('name', filters.search));
+        }
+        if (filters.dateRange) {
+            queries.push(Query.greaterThan('createdAt', filters.dateRange.start));
+            queries.push(Query.lessThan('createdAt', filters.dateRange.end));
+        }
+
+        const users = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.userCollectionId,
+            queries
+        );
+
+        // Enhance user data with additional information
+        const enhancedUsers = await Promise.all(users.documents.map(async user => {
+            const bookings = await userDatabases.listDocuments(
+                config.user.databaseId,
+                config.user.bookingsCollectionId,
+                [Query.equal('userId', user.$id)]
+            );
+
+            return {
+                ...user,
+                totalBookings: bookings.total,
+                lastBooking: bookings.documents[0]?.$createdAt || null
+            };
+        }));
 
         return {
-            yearlyData: monthlyStats,
-            currentMonthStats,
-            previousMonthStats,
-            lastYearSameMonthStats,
-            allData: monthlyStats
+            users: enhancedUsers,
+            total: users.total
         };
     } catch (error) {
-        console.error(`Error in getYearlyStats: ${error.message}`);
-        throw new Error(`Failed to get yearly stats: ${error.message}`);
+        console.error('Error getting users:', error);
+        throw error;
     }
 };
 
-const fetchStatsForMonth = async (startDate, endDate) => {
-    const [users, photographers, bookings, revenue] = await Promise.all([
-        getUserCountForPeriod(startDate, endDate),
-        getActivePhotographersCountForPeriod(startDate, endDate),
-        getPendingBookingsCountForPeriod(startDate, endDate),
-        getRevenueForPeriod(startDate, endDate)
-    ]);
-    return { users, photographers, bookings, revenue };
+// Function to get user statistics
+export const getUserStats = async () => {
+    try {
+        const [users, photographers, bookings] = await Promise.all([
+            userDatabases.listDocuments(
+                config.user.databaseId,
+                config.user.userCollectionId
+            ),
+            photographerDatabases.listDocuments(
+                config.photographer.databaseId,
+                config.photographer.userCollectionId
+            ),
+            userDatabases.listDocuments(
+                config.user.databaseId,
+                config.user.bookingsCollectionId
+            )
+        ]);
+
+        const completedBookings = bookings.documents.filter(b => b.status === 'completed');
+        const totalRevenue = completedBookings.reduce((sum, booking) => sum + parseFloat(booking.price), 0);
+
+        return {
+            totalUsers: users.total,
+            activeUsers: users.documents.filter(u => u.status === 'active').length,
+            bannedUsers: users.documents.filter(u => u.status === 'banned').length,
+            totalPhotographers: photographers.total,
+            activePhotographers: photographers.documents.filter(p => p.status === 'active').length,
+            totalBookings: bookings.total,
+            completedBookings: completedBookings.length,
+            pendingBookings: bookings.documents.filter(b => b.status === 'pending').length,
+            totalRevenue,
+            averageBookingValue: totalRevenue / completedBookings.length || 0
+        };
+    } catch (error) {
+        console.error('Error getting user statistics:', error);
+        throw error;
+    }
 };
 
-const getUserCountForPeriod = (startDate, endDate) => 
-    getDocumentCount(userDatabases, config.user.databaseId, config.user.userCollectionId, 
-        [Query.greaterThanEqual('$createdAt', startDate), Query.lessThanEqual('$createdAt', endDate)]);
-
-const getActivePhotographersCountForPeriod = (startDate, endDate) => 
-    getDocumentCount(photographerDatabases, config.photographer.databaseId, config.photographer.livePhotographersCollectionId, 
-        [Query.greaterThanEqual('$createdAt', startDate), Query.lessThanEqual('$createdAt', endDate), Query.equal('bookingStatus', 'available')]);
-
-const getPendingBookingsCountForPeriod = (startDate, endDate) => 
-    getDocumentCount(userDatabases, config.user.databaseId, config.user.bookingsCollectionId, 
-        [Query.greaterThanEqual('$createdAt', startDate), Query.lessThanEqual('$createdAt', endDate), Query.equal('status', 'pending')]);
-
-const getRevenueForPeriod = async (startDate, endDate) => {
-    const completedBookings = await userDatabases.listDocuments(
-        config.user.databaseId,
-        config.user.bookingsCollectionId,
-        [Query.greaterThanEqual('$createdAt', startDate), Query.lessThanEqual('$createdAt', endDate), Query.equal('status', 'completed')]
-    );
-    return completedBookings.documents.reduce((total, booking) => total + parseFloat(booking.price), 0);
+// Export all necessary functions and clients
+export {
+    photographerClient,
+    userClient,
+    adminClient,
+    photographerDatabases,
+    userDatabases,
+    adminDatabases
 };
 
-// Add these functions to your existing appwrite.js file
-
+// Add this function to handle unread messages
 export const getUnreadMessagesCount = async () => {
-  try {
-    // Check if the collection exists before querying
-    const collections = await userDatabases.listCollections(config.user.databaseId);
-    const messagesCollection = collections.find(c => c.$id === config.messages.collectionId);
-    
-    if (!messagesCollection) {
-      console.warn('Messages collection not found. Returning 0 unread messages.');
-      return 0;
+    try {
+        // Get unread notifications from both user and photographer collections
+        const [userNotifications, photographerNotifications] = await Promise.all([
+            userDatabases.listDocuments(
+                config.user.databaseId,
+                config.user.notificationCollectionId,
+                [Query.equal('read', false)]
+            ),
+            photographerDatabases.listDocuments(
+                config.photographer.databaseId,
+                config.photographer.notificationCollectionId,
+                [Query.equal('read', false)]
+            )
+        ]);
+
+        // Return total count of unread messages
+        return userNotifications.total + photographerNotifications.total;
+    } catch (error) {
+        console.error('Error getting unread messages count:', error);
+        return 0;
     }
-
-    const messages = await userDatabases.listDocuments(
-      config.user.databaseId,
-      config.messages.collectionId,
-      [Query.equal('read', false), Query.limit(1)]
-    );
-    return messages.total;
-  } catch (error) {
-    console.error('Error getting unread message count:', error);
-    return 0;
-  }
 };
 
-export const getMessages = async (conversationId = null) => {
-  try {
-    if (conversationId) {
-      const messages = await userDatabases.listDocuments(
-        config.user.databaseId,
-        config.messages.collectionId,
-        [Query.equal('conversationId', conversationId), Query.orderDesc('$createdAt')]
-      );
-      return messages.documents;
-    } else {
-      const conversations = await userDatabases.listDocuments(
-        config.user.databaseId,
-        config.messages.conversationsCollectionId,
-        [Query.orderDesc('lastMessageAt')]
-      );
-      return conversations.documents;
+// Add this function to mark messages as read
+export const markMessageAsRead = async (messageId, isPhotographerMessage = false) => {
+    try {
+        const databases = isPhotographerMessage ? photographerDatabases : userDatabases;
+        const collectionId = isPhotographerMessage 
+            ? config.photographer.notificationCollectionId 
+            : config.user.notificationCollectionId;
+
+        await databases.updateDocument(
+            isPhotographerMessage ? config.photographer.databaseId : config.user.databaseId,
+            collectionId,
+            messageId,
+            { read: true }
+        );
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        throw error;
     }
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    return [];
-  }
 };
 
-export const sendMessage = async (conversationId, content) => {
-  try {
-    const message = await userDatabases.createDocument(
-      config.user.databaseId,
-      config.messages.collectionId,
-      ID.unique(),
-      {
-        conversationId,
-        content,
-        sender: 'me', // You might want to replace this with the actual user ID
-        read: false,
-        createdAt: new Date().toISOString(),
-      }
-    );
+// Add this function to get all messages
+export const getAllMessages = async () => {
+    try {
+        // Get messages from both user and photographer collections
+        const [userMessages, photographerMessages] = await Promise.all([
+            userDatabases.listDocuments(
+                config.user.databaseId,
+                config.user.notificationCollectionId,
+                [Query.orderDesc('$createdAt')]
+            ),
+            photographerDatabases.listDocuments(
+                config.photographer.databaseId,
+                config.photographer.notificationCollectionId,
+                [Query.orderDesc('$createdAt')]
+            )
+        ]);
 
-    // Update the conversation's last message
-    await userDatabases.updateDocument(
-      config.user.databaseId,
-      config.messages.conversationsCollectionId,
-      conversationId,
-      {
-        lastMessage: content,
-        lastMessageAt: new Date().toISOString(),
-      }
-    );
+        // Combine and sort messages
+        const allMessages = [
+            ...userMessages.documents.map(msg => ({ ...msg, type: 'user' })),
+            ...photographerMessages.documents.map(msg => ({ ...msg, type: 'photographer' }))
+        ].sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
 
-    return message;
-  } catch (error) {
-    console.error('Error sending message:', error);
-    throw error;
-  }
+        return allMessages;
+    } catch (error) {
+        console.error('Error getting all messages:', error);
+        return [];
+    }
 };
 
-// Add this function to fetch recent transactions
+// Add this function for realtime updates
+export const subscribeToRealtimeUpdates = (callback) => {
+    try {
+        // Subscribe to user updates
+        const userSubscription = userClient.subscribe(`databases.${config.user.databaseId}.collections.${config.user.userCollectionId}.documents`, response => {
+            if (response.events.includes('databases.*.collections.*.documents.*.create') ||
+                response.events.includes('databases.*.collections.*.documents.*.update') ||
+                response.events.includes('databases.*.collections.*.documents.*.delete')) {
+                callback('user', response.payload);
+            }
+        });
+
+        // Subscribe to photographer updates
+        const photographerSubscription = photographerClient.subscribe(`databases.${config.photographer.databaseId}.collections.${config.photographer.userCollectionId}.documents`, response => {
+            if (response.events.includes('databases.*.collections.*.documents.*.create') ||
+                response.events.includes('databases.*.collections.*.documents.*.update') ||
+                response.events.includes('databases.*.collections.*.documents.*.delete')) {
+                callback('photographer', response.payload);
+            }
+        });
+
+        // Subscribe to booking updates
+        const bookingSubscription = userClient.subscribe(`databases.${config.user.databaseId}.collections.${config.user.bookingsCollectionId}.documents`, response => {
+            if (response.events.includes('databases.*.collections.*.documents.*.create') ||
+                response.events.includes('databases.*.collections.*.documents.*.update') ||
+                response.events.includes('databases.*.collections.*.documents.*.delete')) {
+                callback('booking', response.payload);
+            }
+        });
+
+        // Return unsubscribe function
+        return () => {
+            userSubscription();
+            photographerSubscription();
+            bookingSubscription();
+        };
+    } catch (error) {
+        console.error('Error setting up realtime subscriptions:', error);
+        return () => {}; // Return empty function if subscription fails
+    }
+};
+
+// Dashboard-specific functions
+export const getYearlyStats = async () => {
+    try {
+        // Implementation for dashboard stats
+        const yearlyData = await userDatabases.listDocuments(
+            config.user.databaseId,
+            config.user.bookingsCollectionId,
+            [Query.orderDesc('$createdAt')]
+        );
+        return { yearlyData: yearlyData.documents };
+    } catch (error) {
+        console.error('Error getting yearly stats:', error);
+        throw error;
+    }
+};
+
+export const getLatestUsers = async (limit = 5, offset = 0) => {
+    // Implementation for latest users
+};
+
+export const getRecentActivities = async (limit = 5, offset = 0) => {
+    // Implementation for recent activities
+};
+
 export const getRecentTransactions = async (limit = 5) => {
-  try {
-    const completedBookings = await userDatabases.listDocuments(
-      config.user.databaseId,
-      config.user.bookingsCollectionId,
-      [
-        Query.equal('status', 'completed'),
-        Query.orderDesc('$createdAt'),
-        Query.limit(limit)
-      ]
-    );
-
-    return completedBookings.documents.map(booking => ({
-      id: booking.$id,
-      description: `Booking payment for ${booking.package}`,
-      amount: parseFloat(booking.price),
-      date: booking.$createdAt,
-      category: 'Booking',
-      status: 'Completed',
-      userDetails: JSON.parse(booking.userDetails)
-    }));
-  } catch (error) {
-    console.error(`Error in getRecentTransactions: ${error.message}`);
-    throw new Error(`Failed to fetch recent transactions: ${error.message}`);
-  }
+    // Implementation for recent transactions
 };
 
 export const getLivePhotographers = async () => {
-  try {
-    const photographers = await photographerDatabases.listDocuments(
-      config.photographer.databaseId,
-      config.photographer.livePhotographersCollectionId,
-      [Query.equal('bookingStatus', 'available')]
-    );
-    return photographers.documents;
-  } catch (error) {
-    console.error(`Error in getLivePhotographers: ${error.message}`);
-    throw new Error(`Failed to get live photographers: ${error.message}`);
-  }
-};
-
-export const getReadableAddress = async (location) => {
-  try {
-    const [latitude, longitude] = location.split(',').map(Number);
-    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-    const data = await response.json();
-    return data.display_name || `${latitude}, ${longitude}`;
-  } catch (error) {
-    console.error('Error getting readable address:', error);
-    return location;
-  }
+    // Implementation for live photographers
 };
 
 export const getUserRequests = async () => {
-  try {
-    const requests = await userDatabases.listDocuments(
-      config.user.databaseId,
-      config.user.bookingsCollectionId,
-      [Query.equal('status', 'pending'), Query.orderDesc('$createdAt')]
-    );
-    return Promise.all(requests.documents.map(async request => ({
-      name: JSON.parse(request.userDetails).name,
-      lat: request.location.split(',')[0],
-      lng: request.location.split(',')[1],
-      requestType: request.package,
-      timestamp: request.$createdAt,
-      eventLocation: request.eventLocation || await getReadableAddress(request.location)
-    })));
-  } catch (error) {
-    console.error(`Error in getUserRequests: ${error.message}`);
-    throw new Error(`Failed to get user requests: ${error.message}`);
-  }
+    // Implementation for user requests
 };
-
-export const getActiveBookings = async () => {
-  try {
-    const bookings = await userDatabases.listDocuments(
-      config.user.databaseId,
-      config.user.bookingsCollectionId,
-      [Query.notEqual('status', 'completed'), Query.notEqual('status', 'cancelled')]
-    );
-    return bookings.documents;
-  } catch (error) {
-    console.error(`Error in getActiveBookings: ${error.message}`);
-    throw new Error(`Failed to get active bookings: ${error.message}`);
-  }
-};
-
-// Make sure these are exported
-
