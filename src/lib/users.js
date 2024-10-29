@@ -1,5 +1,21 @@
 import { userDB, photographerDB, config } from './appwrite-config';
 import { Query, ID } from 'appwrite';
+import { initializeApp } from 'firebase/app';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+// Firebase configuration from mobile app
+const firebaseConfig = {
+    apiKey: "AIzaSyAQrXk6YU_lmQPwXLsQcYK2Dy1z6oYhC6w",
+    authDomain: "momentam-f9e3b.firebaseapp.com",
+    projectId: "momentam-f9e3b",
+    storageBucket: "momentam-f9e3b.appspot.com",
+    messagingSenderId: "1072430525969",
+    appId: "1:1072430525969:web:041d27f34d5b4c8f36dfd6"
+};
+
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const storage = getStorage(firebaseApp);
 
 // Get all users with pagination and filters
 export const getUsers = async (limit = 10, offset = 0, filters = {}) => {
@@ -102,6 +118,7 @@ export const getUserDetails = async (userId) => {
 // Create new user
 export const createUser = async (userData) => {
     try {
+        // Note: Avatar upload should be handled by Firebase
         const user = await userDB.createDocument(
             config.user.databaseId,
             config.user.collections.users,
@@ -110,7 +127,7 @@ export const createUser = async (userData) => {
                 name: userData.name,
                 email: userData.email,
                 phone: userData.phone || '',
-                avatar: userData.avatar || '',
+                avatar: userData.avatar || '', // This should be the Firebase URL
                 registrationComplete: true,
                 createdAt: new Date().toISOString(),
                 lastLogin: null,
@@ -125,10 +142,19 @@ export const createUser = async (userData) => {
     }
 };
 
-// Update user
+// Update user with Firebase avatar upload
 export const updateUser = async (userId, userData) => {
     try {
-        // Only update fields that exist in the user collection
+        let avatarUrl = userData.avatar;
+
+        // If avatar is a File object, upload to Firebase
+        if (userData.avatar instanceof File) {
+            const fileRef = ref(storage, `${userId}-${Date.now()}.jpg`);
+            await uploadBytes(fileRef, userData.avatar);
+            avatarUrl = await getDownloadURL(fileRef);
+        }
+
+        // Update user in Appwrite with Firebase avatar URL
         const updatedUser = await userDB.updateDocument(
             config.user.databaseId,
             config.user.collections.users,
@@ -137,7 +163,7 @@ export const updateUser = async (userId, userData) => {
                 name: userData.name,
                 email: userData.email,
                 phone: userData.phone || '',
-                avatar: userData.avatar || '',
+                avatar: avatarUrl, // Firebase URL
             }
         );
 

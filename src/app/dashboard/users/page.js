@@ -126,7 +126,10 @@ const UsersPage = () => {
     try {
       switch (action) {
         case 'delete':
-          if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`)) {
+          const shouldDelete = typeof window !== 'undefined' && 
+            window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`);
+          
+          if (shouldDelete) {
             await Promise.all(selectedUsers.map(userId => deleteUser(userId)));
             toast.success('Users deleted successfully');
           }
