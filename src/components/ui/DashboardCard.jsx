@@ -213,23 +213,25 @@ const DashboardCard = ({ title, value, icon: Icon, change, yearOverYearChange })
   };
 
   const handleShare = async () => {
-    try {
-      const shareData = {
-        title: `${title} Statistics`,
-        text: `Current ${title}: ${value}\nMonthly Change: ${change}%\nYear over Year: ${yearOverYearChange}%`,
-        url: window.location.href
-      };
+    if (typeof window !== 'undefined') {
+      try {
+        const shareData = {
+          title: `${title} Statistics`,
+          text: `Current ${title}: ${value}\nMonthly Change: ${change}%\nYear over Year: ${yearOverYearChange}%`,
+          url: window.location.href
+        };
 
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback - copy to clipboard
-        await navigator.clipboard.writeText(shareData.text);
-        toast.success('Stats copied to clipboard');
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else {
+          // Fallback - copy to clipboard
+          await navigator.clipboard.writeText(shareData.text);
+          toast.success('Stats copied to clipboard');
+        }
+      } catch (error) {
+        console.error('Error sharing:', error);
+        toast.error('Failed to share stats');
       }
-    } catch (error) {
-      console.error('Error sharing:', error);
-      toast.error('Failed to share stats');
     }
     setIsMenuOpen(false);
   };

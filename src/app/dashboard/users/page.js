@@ -11,13 +11,16 @@ import {
   unbanUser,
   getUserDetails
 } from '@/lib/users';
-import UsersTable from '@/components/ui/UsersTable';
-import CreateUserModal from '@/components/ui/CreateUserModal';
-import UserDetailsModal from '@/components/ui/UserDetailsModal';
-import EditUserModal from '@/components/ui/EditUserModal';
+import dynamic from 'next/dynamic';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
-import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+
+// Dynamically import components with SSR disabled
+const UsersTable = dynamic(() => import('@/components/ui/UsersTable'), { ssr: false });
+const CreateUserModal = dynamic(() => import('@/components/ui/CreateUserModal'), { ssr: false });
+const UserDetailsModal = dynamic(() => import('@/components/ui/UserDetailsModal'), { ssr: false });
+const EditUserModal = dynamic(() => import('@/components/ui/EditUserModal'), { ssr: false });
+const DeleteConfirmationModal = dynamic(() => import('@/components/ui/DeleteConfirmationModal'), { ssr: false });
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
