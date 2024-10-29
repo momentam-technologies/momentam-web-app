@@ -49,7 +49,9 @@ const UsersPage = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    fetchUsers();
+    if (typeof window !== 'undefined') {
+      fetchUsers();
+    }
   }, [fetchUsers]);
 
   const handleCreateUser = async (userData) => {
@@ -126,22 +128,36 @@ const UsersPage = () => {
     try {
       switch (action) {
         case 'delete':
-          const shouldDelete = typeof window !== 'undefined' && 
-            window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`);
-          
-          if (shouldDelete) {
-            await Promise.all(selectedUsers.map(userId => deleteUser(userId)));
-            toast.success('Users deleted successfully');
-          }
+          setUserToDelete(selectedUsers);
           break;
         default:
           break;
       }
-      setSelectedUsers([]);
-      fetchUsers();
     } catch (error) {
       toast.error(`Failed to ${action} users`);
       console.error(error);
+    }
+  };
+
+  const handleShare = async (userData) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const shareData = {
+          title: 'User Details',
+          text: `User: ${userData.name}\nEmail: ${userData.email}`,
+          url: window.location.href
+        };
+
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else {
+          await navigator.clipboard.writeText(shareData.text);
+          toast.success('User details copied to clipboard');
+        }
+      } catch (error) {
+        console.error('Error sharing:', error);
+        toast.error('Failed to share user details');
+      }
     }
   };
 
