@@ -1,15 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { IconEye, IconEdit, IconTrash, IconBan, IconUserCheck, IconStar, IconBookmark } from '@tabler/icons-react';
+import { IconEye, IconEdit, IconTrash, IconBookmark } from '@tabler/icons-react';
 import { format } from 'date-fns';
 
 const UsersTable = ({ 
   users, 
   onViewUser, 
   onEditUser, 
-  onDeleteUser, 
-  onBanUser,
+  onDeleteUser,
   selectedUsers,
   onSelectUser,
   onSelectAll 
@@ -31,9 +30,6 @@ const UsersTable = ({
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               User
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Status
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Bookings
@@ -72,11 +68,6 @@ const UsersTable = ({
                       layout="fill"
                       className="rounded-full"
                     />
-                    {user.verified && (
-                      <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                        <IconUserCheck size={12} className="text-white" />
-                      </div>
-                    )}
                   </div>
                   <div className="ml-4">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -87,17 +78,6 @@ const UsersTable = ({
                     </div>
                   </div>
                 </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  user.status === 'active' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                    : user.status === 'banned'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400'
-                }`}>
-                  {user.status}
-                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
@@ -126,12 +106,6 @@ const UsersTable = ({
                   className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                 >
                   <IconTrash size={20} />
-                </button>
-                <button
-                  onClick={() => onBanUser(user)}
-                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  <IconBan size={20} />
                 </button>
               </td>
             </motion.tr>

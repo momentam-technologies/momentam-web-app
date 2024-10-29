@@ -17,6 +17,7 @@ import UserDetailsModal from '@/components/ui/UserDetailsModal';
 import EditUserModal from '@/components/ui/EditUserModal';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
+import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -31,6 +32,7 @@ const UsersPage = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const usersPerPage = 10;
   const [editingUser, setEditingUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -62,9 +64,13 @@ const UsersPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDeleteUser = async (user) => {
+    setUserToDelete(user);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await deleteUser(userId);
+      await deleteUser(userToDelete.$id);
       toast.success('User deleted successfully');
       fetchUsers();
     } catch (error) {
@@ -123,12 +129,6 @@ const UsersPage = () => {
           if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`)) {
             await Promise.all(selectedUsers.map(userId => deleteUser(userId)));
             toast.success('Users deleted successfully');
-          }
-          break;
-        case 'ban':
-          if (window.confirm(`Are you sure you want to ban ${selectedUsers.length} users?`)) {
-            await Promise.all(selectedUsers.map(userId => banUser(userId)));
-            toast.success('Users banned successfully');
           }
           break;
         default:
@@ -296,6 +296,14 @@ const UsersPage = () => {
             onClose={() => setEditingUser(null)}
             user={editingUser}
             onUpdateUser={handleUpdateUser}
+          />
+        )}
+        {userToDelete && (
+          <DeleteConfirmationModal
+            isOpen={!!userToDelete}
+            onClose={() => setUserToDelete(null)}
+            onConfirm={handleConfirmDelete}
+            userName={userToDelete.name}
           />
         )}
       </AnimatePresence>

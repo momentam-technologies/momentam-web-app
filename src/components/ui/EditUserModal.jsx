@@ -10,8 +10,7 @@ const EditUserModal = ({ isOpen, onClose, user, onUpdateUser }) => {
     email: user.email,
     phone: user.phone || '',
     avatar: user.avatar,
-    avatarPreview: user.avatar,
-    status: user.status
+    avatarPreview: user.avatar
   });
 
   const [isLoading, setIsLoading] = useState(false);

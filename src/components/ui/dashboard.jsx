@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { IconUsers, IconCamera, IconCalendar, IconCurrencyDollar, IconUserPlus, IconClock, IconBookmark, IconUserCheck, IconX, IconArrowUpRight, IconArrowDownRight, IconDotsVertical, IconSearch, IconFilter, IconSortAscending, IconSortDescending, IconZoomIn, IconUser, IconMail, IconPhone, IconStar, IconRefresh, IconDownload, IconMaximize, IconShare, IconInfoCircle, IconAlertTriangle, IconChartBar } from '@tabler/icons-react';
 import {
+  getDashboardStats,
   getYearlyStats,
+  getActiveBookings,
   getLatestUsers,
   getRecentActivities,
   getRecentTransactions,
@@ -182,8 +184,8 @@ export default function DashboardContent() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
-    activePhotographers: 0,
-    pendingBookings: 0,
+    totalPhotographers: 0,
+    totalBookings: 0,
     revenue: 0,
   });
   const [latestUsers, setLatestUsers] = useState([]);
@@ -192,8 +194,8 @@ export default function DashboardContent() {
   const [error, setError] = useState(null);
   const [changes, setChanges] = useState({
     totalUsers: 0,
-    activePhotographers: 0,
-    pendingBookings: 0,
+    totalPhotographers: 0,
+    totalBookings: 0,
     revenue: 0,
   });
   const [yearlyData, setYearlyData] = useState([]);
@@ -203,8 +205,8 @@ export default function DashboardContent() {
   const [activityPage, setActivityPage] = useState(1);
   const [yearOverYearChanges, setYearOverYearChanges] = useState({
     totalUsers: 0,
-    activePhotographers: 0,
-    pendingBookings: 0,
+    totalPhotographers: 0,
+    totalBookings: 0,
     revenue: 0,
   });
   const [runTour, setRunTour] = useState(false);
@@ -212,6 +214,7 @@ export default function DashboardContent() {
   const [isAllTransactionsModalOpen, setIsAllTransactionsModalOpen] = useState(false);
   const [isExpandedMapOpen, setIsExpandedMapOpen] = useState(false);
   const [userRequests, setUserRequests] = useState([]);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   const tourSteps = [
     {
@@ -281,116 +284,96 @@ export default function DashboardContent() {
     setUser(getCurrentUser());
   }, []);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
       const [
+        stats,
         yearlyStatsData,
-        latestUsersData,
-        recentActivitiesData,
-        allTransactionsData,
-        livePhotographersData,
-        userRequestsData,
-        activeBookingsData
+        activeBookings,
+        latestUsers,
+        recentActivities,
+        recentTransactions,
+        livePhotographers,
+        userRequests
       ] = await Promise.all([
+        getDashboardStats(),
         getYearlyStats(),
+        getActiveBookings(),
         getLatestUsers(5),
         getRecentActivities(5),
-        getRecentTransactions(100),
+        getRecentTransactions(5),
         getLivePhotographers(),
-        getUserRequests(),
-        getActiveBookings()
+        getUserRequests()
       ]);
 
-      const { yearlyData, currentMonthStats, previousMonthStats, lastYearSameMonthStats } = yearlyStatsData;
-
       setStats({
-        totalUsers: currentMonthStats.users,
-        activePhotographers: livePhotographersData.length,
-        pendingBookings: activeBookingsData.filter(booking => booking.status === 'pending').length,
-        revenue: currentMonthStats.revenue,
+        totalUsers: stats.totalUsers,
+        totalPhotographers: stats.totalPhotographers,
+        totalBookings: stats.totalBookings,
+        revenue: stats.revenue
       });
 
-      setChanges({
-        totalUsers: calculatePercentageChange(previousMonthStats.users, currentMonthStats.users),
-        activePhotographers: calculatePercentageChange(previousMonthStats.photographers, livePhotographersData.length),
-        pendingBookings: calculatePercentageChange(previousMonthStats.bookings, activeBookingsData.filter(booking => booking.status === 'pending').length),
-        revenue: calculatePercentageChange(previousMonthStats.revenue, currentMonthStats.revenue),
-      });
-
-      setYearOverYearChanges({
-        totalUsers: calculatePercentageChange(lastYearSameMonthStats.users, currentMonthStats.users),
-        activePhotographers: calculatePercentageChange(lastYearSameMonthStats.photographers, livePhotographersData.length),
-        pendingBookings: calculatePercentageChange(lastYearSameMonthStats.bookings, activeBookingsData.filter(booking => booking.status === 'pending').length),
-        revenue: calculatePercentageChange(lastYearSameMonthStats.revenue, currentMonthStats.revenue),
-      });
-
-      setYearlyData(yearlyData);
-      setLatestUsers(latestUsersData);
-      setRecentActivities(recentActivitiesData);
-      setAllTransactions(allTransactionsData);
-      setRecentTransactions(allTransactionsData.slice(0, 5));
-      setAvailablePhotographers(livePhotographersData);
-      setUserRequests(userRequestsData);
+      setChanges(stats.changes);
+      setYearOverYearChanges(yearlyStatsData.yearOverYearChanges);
+      setYearlyData(yearlyStatsData.yearlyData);
+      setLatestUsers(latestUsers);
+      setRecentActivities(recentActivities);
+      setRecentTransactions(recentTransactions);
+      setAvailablePhotographers(livePhotographers);
+      setUserRequests(userRequests);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Failed to load dashboard data:', error);
       setError(`Failed to load dashboard data: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
   const handleRealtimeUpdate = useCallback((eventType, payload) => {
     console.log('Received real-time update:', eventType, payload);
     switch (eventType) {
       case 'user_created':
-      case 'photographer_created':
         setStats(prev => ({ ...prev, totalUsers: prev.totalUsers + 1 }));
         setLatestUsers(prev => [payload, ...prev].slice(0, 5));
         break;
+      case 'photographer_created':
+        setStats(prev => ({ ...prev, totalPhotographers: prev.totalPhotographers + 1 }));
+        break;
       case 'user_deleted':
-      case 'photographer_deleted':
         setStats(prev => ({ ...prev, totalUsers: prev.totalUsers - 1 }));
         setLatestUsers(prev => prev.filter(user => user.$id !== payload.$id));
         break;
+      case 'photographer_deleted':
+        setStats(prev => ({ ...prev, totalPhotographers: prev.totalPhotographers - 1 }));
+        break;
       case 'booking_created':
-        setStats(prev => ({ ...prev, pendingBookings: prev.pendingBookings + 1 }));
+        setStats(prev => ({ ...prev, totalBookings: prev.totalBookings + 1 }));
         setRecentActivities(prev => [{
           type: 'booking',
-          description: `New booking: ${payload.package} by ${JSON.parse(payload.userDetails).name}`,
+          description: `${JSON.parse(payload.userDetails).name} made a new ${payload.package} booking`,
           time: payload.$createdAt
         }, ...prev].slice(0, 5));
         break;
-      case 'booking_updated':
-        if (payload.status === 'completed') {
-          setStats(prev => ({
-            ...prev,
-            pendingBookings: prev.pendingBookings - 1,
-            revenue: prev.revenue + parseFloat(payload.price)
-          }));
-        }
-        break;
-      case 'photographer_status_changed':
-        if (payload.bookingStatus === 'available') {
-          setStats(prev => ({ ...prev, activePhotographers: prev.activePhotographers + 1 }));
-        } else {
-          setStats(prev => ({ ...prev, activePhotographers: prev.activePhotographers - 1 }));
-        }
+      case 'booking_completed':
+        setStats(prev => ({
+          ...prev,
+          revenue: prev.revenue + parseFloat(payload.price || 0)
+        }));
         break;
     }
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
-
-    const unsubscribeFunction = subscribeToRealtimeUpdates(handleRealtimeUpdate);
-
+    const unsubscribe = subscribeToRealtimeUpdates(handleRealtimeUpdate);
     return () => {
-      if (typeof unsubscribeFunction === 'function') {
-        unsubscribeFunction();
-      }
+      if (unsubscribe) unsubscribe();
     };
-  }, [fetchDashboardData, handleRealtimeUpdate]);
+  }, [handleRealtimeUpdate]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -417,6 +400,10 @@ export default function DashboardContent() {
     setRecentActivities([...recentActivities, ...newActivities]);
     setActivityPage(activityPage + 1);
   };
+
+  useEffect(() => {
+    console.log('Yearly Data:', yearlyData); // Add this to check the data structure
+  }, [yearlyData]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -461,34 +448,34 @@ export default function DashboardContent() {
               title="Total Users" 
               value={stats.totalUsers.toLocaleString()} 
               icon={IconUsers} 
-              change={changes.totalUsers} 
+              change={changes.totalUsers}
               yearOverYearChange={yearOverYearChanges.totalUsers}
             />
             <DashboardCard 
-              title="Active Photographers" 
-              value={stats.activePhotographers.toLocaleString()} 
+              title="Total Photographers" 
+              value={stats.totalPhotographers.toLocaleString()} 
               icon={IconCamera} 
-              change={changes.activePhotographers} 
-              yearOverYearChange={yearOverYearChanges.activePhotographers}
+              change={changes.totalPhotographers}
+              yearOverYearChange={yearOverYearChanges.totalPhotographers}
             />
             <DashboardCard 
-              title="Pending Bookings" 
-              value={stats.pendingBookings.toLocaleString()} 
+              title="Total Bookings" 
+              value={stats.totalBookings.toLocaleString()} 
               icon={IconCalendar} 
-              change={changes.pendingBookings} 
-              yearOverYearChange={yearOverYearChanges.pendingBookings}
+              change={changes.totalBookings}
+              yearOverYearChange={yearOverYearChanges.totalBookings}
             />
             <DashboardCard 
               title="Revenue" 
               value={`TZS ${stats.revenue.toLocaleString()}`} 
               icon={IconCurrencyDollar} 
-              change={changes.revenue} 
+              change={changes.revenue}
               yearOverYearChange={yearOverYearChanges.revenue}
             />
           </div>
 
           <div className="trend-graph">
-            <TrendGraph data={yearlyData} />
+            <TrendGraph data={yearlyData || []} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
@@ -496,7 +483,7 @@ export default function DashboardContent() {
               <PhotographerMap 
                 photographers={availablePhotographers}
                 userRequests={userRequests}
-                onExpandMap={() => setIsExpandedMapOpen(true)}
+                onExpandMap={() => setIsMapExpanded(true)}
               />
             </div>
             <div className="recent-transactions">
@@ -531,6 +518,30 @@ export default function DashboardContent() {
           transactions={allTransactions}
         />
       )}
+      <AnimatePresence>
+        {isMapExpanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="absolute inset-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl"
+            >
+              <PhotographerMap 
+                photographers={availablePhotographers}
+                userRequests={userRequests}
+                isExpanded={true}
+                onClose={() => setIsMapExpanded(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

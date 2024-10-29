@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { IconMapPin, IconZoomIn, IconFilter, IconRefresh, IconDotsVertical, 
          IconUser, IconCamera, IconMapPinFilled, IconRadar, IconMapSearch, IconX } from '@tabler/icons-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
-import { getReadableAddress } from '@/lib/appwrite';
+import { getReadableAddress } from '@/lib/dashboard';
 
 const AnimatedMarker = ({ children }) => (
   <motion.div
@@ -17,11 +17,17 @@ const AnimatedMarker = ({ children }) => (
   </motion.div>
 );
 
-const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
+const PhotographerMap = ({ 
+  photographers, 
+  userRequests, 
+  onExpandMap,
+  isExpanded,
+  onClose 
+}) => {
   const [filterType, setFilterType] = useState('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [hoveredMarker, setHoveredMarker] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [addresses, setAddresses] = useState({});
 
   const totalActive = photographers.length;
   const totalRequests = userRequests.length;
@@ -31,186 +37,26 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
     console.log('Refreshing map data...');
   };
 
-  const handleExpandMap = () => {
-    setIsExpanded(true);
-  };
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      const newAddresses = {};
+      for (const photographer of photographers) {
+        newAddresses[photographer.$id] = await getReadableAddress(photographer.location);
+      }
+      setAddresses(newAddresses);
+    };
 
-  // Add this expanded view JSX
-  const renderExpandedView = () => {
-    if (!isExpanded) return null;
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="absolute inset-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-neutral-700">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-xl bg-blue-500/10 dark:bg-blue-400/10">
-                  <IconRadar className="text-blue-500 dark:text-blue-400" size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Live Tracking</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {photographers.length} photographers • {userRequests.length} active requests
-                  </p>
-                </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsExpanded(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700 text-gray-500"
-              >
-                <IconX size={24} />
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Expanded Map */}
-          <div className="flex-1 relative">
-            <MapContainer
-              center={[-6.776012, 39.178326]}
-              zoom={13}
-              style={{ height: '100%', width: '100%' }}
-              zoomControl={false}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              />
-              <ZoomControl position="bottomright" />
-
-              {(filterType === 'all' || filterType === 'photographers') &&
-                photographers.map((photographer) => (
-                  <AnimatedMarker key={`photographer-${photographer.$id}`}>
-                    <Marker
-                      position={photographer.location.split(',').map(Number)}
-                      icon={L.divIcon({
-                        html: `
-                          <div class="relative group">
-                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                            <div class="w-10 h-10 rounded-xl bg-blue-500 text-white font-bold text-sm shadow-lg transform transition-transform hover:scale-110 flex items-center justify-center">
-                              ${photographer.name[0]}
-                            </div>
-                          </div>
-                        `,
-                        className: 'custom-icon'
-                      })}
-                      eventHandlers={{
-                        mouseover: () => setHoveredMarker(photographer.$id),
-                        mouseout: () => setHoveredMarker(null),
-                      }}
-                    >
-                      <Popup className="custom-popup">
-                        <div className="p-2">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold">
-                              {photographer.name[0]}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-lg">{photographer.name}</h4>
-                              <div className="flex items-center">
-                                <span className="text-yellow-500 mr-1">★</span>
-                                <span className="text-sm">{photographer.rating || 'N/A'}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="space-y-1 text-sm">
-                            <p className="flex items-center text-green-600">
-                              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                              Available
-                            </p>
-                            <p className="text-gray-600">{getReadableAddress(photographer.location)}</p>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  </AnimatedMarker>
-                ))}
-
-              {(filterType === 'all' || filterType === 'requests') &&
-                userRequests.map((request, index) => (
-                  <AnimatedMarker key={`request-${index}`}>
-                    <Marker
-                      position={[request.lat, request.lng]}
-                      icon={L.divIcon({
-                        html: `
-                          <div class="relative group">
-                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white animate-pulse"></div>
-                            <div class="w-10 h-10 rounded-xl bg-red-500 text-white font-bold text-sm shadow-lg transform transition-transform hover:scale-110 flex items-center justify-center">
-                              ${request.name[0]}
-                            </div>
-                          </div>
-                        `,
-                        className: 'custom-icon'
-                      })}
-                      eventHandlers={{
-                        mouseover: () => setHoveredMarker(`request-${index}`),
-                        mouseout: () => setHoveredMarker(null),
-                      }}
-                    >
-                      <Popup className="custom-popup">
-                        <div className="p-2">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold">
-                              {request.name[0]}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-lg">{request.name}</h4>
-                              <p className="text-sm text-gray-600">{request.requestType}</p>
-                            </div>
-                          </div>
-                          <div className="space-y-1 text-sm">
-                            <p className="text-yellow-600 flex items-center">
-                              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
-                              Pending Request
-                            </p>
-                            <p className="text-gray-600">{format(new Date(request.timestamp), 'PPp')}</p>
-                            <p className="text-gray-600">{request.eventLocation}</p>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  </AnimatedMarker>
-                ))}
-            </MapContainer>
-
-            {/* Map Legend */}
-            <div className="absolute bottom-4 left-4 bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-2 z-[400]">
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>Photographers</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span>Requests</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
+    fetchAddresses();
+  }, [photographers]);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.6 }}
-      className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden h-[536px]"
+      className={`bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden ${
+        isExpanded ? 'h-full' : 'h-[536px]'
+      }`}
     >
       {/* Header section */}
       <div className="p-6 border-b border-gray-200 dark:border-neutral-700">
@@ -282,10 +128,10 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleExpandMap}
+              onClick={isExpanded ? onClose : onExpandMap}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700 text-gray-600 dark:text-gray-300"
             >
-              <IconZoomIn size={20} />
+              {isExpanded ? <IconX size={20} /> : <IconZoomIn size={20} />}
             </motion.button>
           </div>
         </div>
@@ -376,7 +222,7 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
                           <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                           Available
                         </p>
-                        <p className="text-gray-600">{getReadableAddress(photographer.location)}</p>
+                        <p className="text-gray-600">{addresses[photographer.$id] || 'Loading address...'}</p>
                       </div>
                     </div>
                   </Popup>
@@ -394,7 +240,7 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
                       <div class="relative group">
                         <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white animate-pulse"></div>
                         <div class="w-10 h-10 rounded-xl bg-red-500 text-white font-bold text-sm shadow-lg transform transition-transform hover:scale-110 flex items-center justify-center">
-                          ${request.name[0]}
+                          ${request.name ? request.name[0] : 'U'}
                         </div>
                       </div>
                     `,
@@ -409,10 +255,10 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
                     <div className="p-2">
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold">
-                          {request.name[0]}
+                          {request.name ? request.name[0] : 'U'}
                         </div>
                         <div>
-                          <h4 className="font-bold text-lg">{request.name}</h4>
+                          <h4 className="font-bold text-lg">{request.name || 'Unknown User'}</h4>
                           <p className="text-sm text-gray-600">{request.requestType}</p>
                         </div>
                       </div>
@@ -445,11 +291,6 @@ const PhotographerMap = ({ photographers, userRequests, onExpandMap }) => {
           </div>
         </div>
       </div>
-
-      {/* Expanded view */}
-      <AnimatePresence>
-        {isExpanded && renderExpandedView()}
-      </AnimatePresence>
     </motion.div>
   );
 };

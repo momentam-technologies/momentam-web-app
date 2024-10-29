@@ -1,4 +1,5 @@
 import { Client, Account, Databases, Query, ID } from 'appwrite';
+import axios from 'axios';
 
 // Configuration
 const config = {
@@ -446,4 +447,20 @@ export const getLivePhotographers = async () => {
 
 export const getUserRequests = async () => {
     // Implementation for user requests
+};
+
+// Ensure this function is defined
+export const getReadableAddress = async (location) => {
+    try {
+        const [latitude, longitude] = location.split(',').map(Number);
+        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`);
+        
+        if (response.data.results.length > 0) {
+            return response.data.results[0].formatted_address;
+        }
+        return 'Address not found';
+    } catch (error) {
+        console.error('Error fetching address:', error);
+        return 'Error fetching address';
+    }
 };

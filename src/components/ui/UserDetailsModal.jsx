@@ -87,15 +87,21 @@ const ClientGalleryGroup = ({ client, photos }) => (
 );
 
 const UserDetailsModal = ({ user, onClose }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState(user);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   const fetchUserDetails = async () => {
     setIsLoading(true);
     try {
       const details = await getUserDetails(user.$id);
-      setUserDetails(details);
+      setUserDetails({
+        ...details,
+        totalBookings: details.totalBookings || 0,
+        completedBookings: details.completedBookings || 0,
+        cancelledBookings: details.cancelledBookings || 0,
+        totalSpent: details.totalSpent || 0
+      });
     } catch (error) {
       console.error('Error fetching user details:', error);
     } finally {

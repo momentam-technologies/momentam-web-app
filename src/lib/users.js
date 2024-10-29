@@ -1,4 +1,4 @@
-import { userDatabases, photographerDatabases, config } from './appwrite-config';
+import { userDB, photographerDB, config } from './appwrite-config';
 import { Query, ID } from 'appwrite';
 
 // Get all users with pagination and filters
@@ -6,6 +6,7 @@ export const getUsers = async (limit = 10, offset = 0, filters = {}) => {
     try {
         let queries = [Query.limit(limit), Query.offset(offset)];
 
+        // Add filters if they exist
         if (filters.status) {
             queries.push(Query.equal('status', filters.status));
         }
@@ -17,23 +18,31 @@ export const getUsers = async (limit = 10, offset = 0, filters = {}) => {
             queries.push(Query.lessThan('$createdAt', filters.dateRange.end));
         }
 
-        const users = await userDatabases.listDocuments(
+        // Fetch only users (clients), not photographers
+        const users = await userDB.listDocuments(
             config.user.databaseId,
-            config.user.userCollectionId,
+            config.user.collections.users,
             queries
         );
 
         // Enhance user data with additional information
         const enhancedUsers = await Promise.all(users.documents.map(async user => {
-            const bookings = await userDatabases.listDocuments(
+            // Get user's bookings
+            const bookings = await userDB.listDocuments(
                 config.user.databaseId,
-                config.user.bookingsCollectionId,
+                config.user.collections.bookings,
                 [Query.equal('userId', user.$id)]
             );
+
+            // Calculate user statistics
+            const completedBookings = bookings.documents.filter(b => b.status === 'completed');
+            const totalSpent = completedBookings.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0);
 
             return {
                 ...user,
                 totalBookings: bookings.total,
+                completedBookings: completedBookings.length,
+                totalSpent,
                 lastBooking: bookings.documents[0]?.$createdAt || null
             };
         }));
@@ -48,37 +57,41 @@ export const getUsers = async (limit = 10, offset = 0, filters = {}) => {
     }
 };
 
-// Get user details including bookings and activities
+// Get detailed user information
 export const getUserDetails = async (userId) => {
     try {
         const [user, bookings, activities] = await Promise.all([
-            userDatabases.getDocument(
+            userDB.getDocument(
                 config.user.databaseId,
-                config.user.userCollectionId,
+                config.user.collections.users,
                 userId
             ),
-            userDatabases.listDocuments(
+            userDB.listDocuments(
                 config.user.databaseId,
-                config.user.bookingsCollectionId,
+                config.user.collections.bookings,
                 [Query.equal('userId', userId)]
             ),
-            userDatabases.listDocuments(
+            userDB.listDocuments(
                 config.user.databaseId,
-                config.user.notificationCollectionId,
+                config.user.collections.notifications,
                 [Query.equal('userId', userId), Query.orderDesc('$createdAt')]
             )
         ]);
 
+        // Calculate statistics
         const completedBookings = bookings.documents.filter(b => b.status === 'completed');
         const cancelledBookings = bookings.documents.filter(b => b.status === 'cancelled');
+        const totalSpent = completedBookings.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0);
 
         return {
             ...user,
             totalBookings: bookings.total,
             completedBookings: completedBookings.length,
             cancelledBookings: cancelledBookings.length,
+            totalSpent,
             recentActivities: activities.documents,
-            lastLogin: user.lastLogin || user.$updatedAt
+            lastLogin: user.lastLogin || user.$updatedAt,
+            bookings: bookings.documents
         };
     } catch (error) {
         console.error('Error getting user details:', error);
@@ -89,20 +102,19 @@ export const getUserDetails = async (userId) => {
 // Create new user
 export const createUser = async (userData) => {
     try {
-        const user = await userDatabases.createDocument(
+        const user = await userDB.createDocument(
             config.user.databaseId,
-            config.user.userCollectionId,
+            config.user.collections.users,
             ID.unique(),
             {
                 name: userData.name,
                 email: userData.email,
                 phone: userData.phone || '',
                 avatar: userData.avatar || '',
-                status: 'active',
-                type: 'user',
                 registrationComplete: true,
                 createdAt: new Date().toISOString(),
-                lastLogin: null
+                lastLogin: null,
+                recentLocations: JSON.stringify([])
             }
         );
 
@@ -116,17 +128,16 @@ export const createUser = async (userData) => {
 // Update user
 export const updateUser = async (userId, userData) => {
     try {
-        const updatedUser = await userDatabases.updateDocument(
+        // Only update fields that exist in the user collection
+        const updatedUser = await userDB.updateDocument(
             config.user.databaseId,
-            config.user.userCollectionId,
+            config.user.collections.users,
             userId,
             {
                 name: userData.name,
                 email: userData.email,
                 phone: userData.phone || '',
                 avatar: userData.avatar || '',
-                status: userData.status || 'active',
-                lastUpdated: new Date().toISOString()
             }
         );
 
@@ -140,26 +151,49 @@ export const updateUser = async (userId, userData) => {
 // Delete user
 export const deleteUser = async (userId) => {
     try {
-        // Delete user's bookings first
-        const bookings = await userDatabases.listDocuments(
+        // Make sure we're using just the ID string
+        const id = typeof userId === 'object' ? userId.$id : userId;
+
+        // First, get all user's bookings
+        const bookings = await userDB.listDocuments(
             config.user.databaseId,
-            config.user.bookingsCollectionId,
-            [Query.equal('userId', userId)]
+            config.user.collections.bookings,
+            [Query.equal('userId', id)]
         );
 
+        // Delete all bookings
         await Promise.all(bookings.documents.map(booking => 
-            userDatabases.deleteDocument(
+            userDB.deleteDocument(
                 config.user.databaseId,
-                config.user.bookingsCollectionId,
+                config.user.collections.bookings,
                 booking.$id
             )
         ));
 
-        // Delete user
-        await userDatabases.deleteDocument(
+        // Delete user's notifications if they exist
+        try {
+            const notifications = await userDB.listDocuments(
+                config.user.databaseId,
+                config.user.collections.notifications,
+                [Query.equal('userId', id)]
+            );
+
+            await Promise.all(notifications.documents.map(notification => 
+                userDB.deleteDocument(
+                    config.user.databaseId,
+                    config.user.collections.notifications,
+                    notification.$id
+                )
+            ));
+        } catch (error) {
+            console.log('No notifications to delete');
+        }
+
+        // Finally delete the user
+        await userDB.deleteDocument(
             config.user.databaseId,
-            config.user.userCollectionId,
-            userId
+            config.user.collections.users,
+            id
         );
 
         return { success: true };
@@ -169,52 +203,11 @@ export const deleteUser = async (userId) => {
     }
 };
 
-// Ban user
-export const banUser = async (userId) => {
-    try {
-        const updatedUser = await userDatabases.updateDocument(
-            config.user.databaseId,
-            config.user.userCollectionId,
-            userId,
-            {
-                status: 'banned',
-                bannedAt: new Date().toISOString()
-            }
-        );
-
-        return updatedUser;
-    } catch (error) {
-        console.error('Error banning user:', error);
-        throw error;
-    }
-};
-
-// Unban user
-export const unbanUser = async (userId) => {
-    try {
-        const updatedUser = await userDatabases.updateDocument(
-            config.user.databaseId,
-            config.user.userCollectionId,
-            userId,
-            {
-                status: 'active',
-                bannedAt: null
-            }
-        );
-
-        return updatedUser;
-    } catch (error) {
-        console.error('Error unbanning user:', error);
-        throw error;
-    }
-};
-
-// Get user bookings
 export const getUserBookings = async (userId) => {
     try {
-        const bookings = await userDatabases.listDocuments(
+        const bookings = await userDB.listDocuments(
             config.user.databaseId,
-            config.user.bookingsCollectionId,
+            config.user.collections.bookings,
             [Query.equal('userId', userId), Query.orderDesc('$createdAt')]
         );
 
@@ -225,12 +218,11 @@ export const getUserBookings = async (userId) => {
     }
 };
 
-// Get user activities
 export const getUserActivities = async (userId) => {
     try {
-        const activities = await userDatabases.listDocuments(
+        const activities = await userDB.listDocuments(
             config.user.databaseId,
-            config.user.notificationCollectionId,
+            config.user.collections.notifications,
             [Query.equal('userId', userId), Query.orderDesc('$createdAt')]
         );
 
@@ -240,5 +232,3 @@ export const getUserActivities = async (userId) => {
         throw error;
     }
 };
-
-// ... other user management functions ...

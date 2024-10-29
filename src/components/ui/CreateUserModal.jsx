@@ -8,7 +8,6 @@ const CreateUserModal = ({ isOpen, onClose, onCreateUser }) => {
     name: '',
     email: '',
     phone: '',
-    password: '',
     avatar: null,
     avatarPreview: null
   });

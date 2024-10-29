@@ -235,12 +235,12 @@ const DashboardCard = ({ title, value, icon: Icon, change, yearOverYearChange })
   };
 
   const handleShowInfo = () => {
-    // Define metric descriptions
+    // Define simpler metric descriptions
     const metricInfo = {
-      'Total Users': 'Total number of registered users on the platform, including both photographers and clients.',
-      'Active Photographers': 'Number of photographers currently available for bookings.',
-      'Pending Bookings': 'Number of booking requests awaiting photographer confirmation.',
-      'Revenue': 'Total revenue generated from completed bookings.',
+        'Total Users': 'Total number of clients registered on the platform.',
+        'Total Photographers': 'Total number of photographers registered on the platform.',
+        'Total Bookings': 'Total number of bookings made on the platform.',
+        'Revenue': 'Total revenue from all completed bookings.',
     };
 
     // Show info modal or tooltip
@@ -270,7 +270,7 @@ const DashboardCard = ({ title, value, icon: Icon, change, yearOverYearChange })
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         whileHover={{ y: -5, transition: { duration: 0.2 } }}
-        className="relative bg-white dark:bg-neutral-800 rounded-2xl shadow-lg overflow-hidden group"
+        className="relative bg-white dark:bg-neutral-800 rounded-2xl shadow-lg overflow-visible group"
         role="region"
         aria-label={`${title} statistics`}
       >
@@ -313,7 +313,12 @@ const DashboardCard = ({ title, value, icon: Icon, change, yearOverYearChange })
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-neutral-800 shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+                    className="absolute right-0 -mt-20 w-56 rounded-xl bg-white dark:bg-neutral-800 shadow-lg ring-1 ring-black ring-opacity-5 z-[1000] overflow-visible"
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                    }}
                   >
                     <div className="p-2 space-y-1">
                       {/* View Details */}
