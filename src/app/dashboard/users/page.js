@@ -10,7 +10,7 @@ import {
   banUser,
   unbanUser,
   getUserDetails
-} from '@/lib/users';  // Using the users-specific functions
+} from '@/lib/users';
 import UsersTable from '@/components/ui/UsersTable';
 import CreateUserModal from '@/components/ui/CreateUserModal';
 import UserDetailsModal from '@/components/ui/UserDetailsModal';
@@ -49,9 +49,7 @@ const UsersPage = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      fetchUsers();
-    }
+    fetchUsers();
   }, [fetchUsers]);
 
   const handleCreateUser = async (userData) => {
