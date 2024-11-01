@@ -1,7 +1,7 @@
 import { Client, Databases } from 'appwrite';
 
 // Configuration
-const config = {
+export const config = {
     endpoint: 'https://cloud.appwrite.io/v1',
     user: {
         projectId: '66d00db0003702a664b7',
@@ -20,7 +20,8 @@ const config = {
             users: '66f66c970021be082279',
             livePhotographers: '66f703a5001bcd7be8a9',
             notifications: '670302070011aa1a320f',
-            uploadedPhotos: '6704f38c001529b8ddbf'
+            uploadedPhotos: '6704f38c001529b8ddbf',
+            editedPhotos: '6704f38c001529b8ddbg'
         }
     }
 };
@@ -38,5 +39,3 @@ export const photographerClient = createClient(config.photographer.projectId);
 // Initialize databases
 export const userDB = new Databases(userClient);
 export const photographerDB = new Databases(photographerClient);
-
-export { config }; // Export config if needed elsewhere

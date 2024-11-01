@@ -24,13 +24,12 @@ export function SidebarDemo() {
   const links = [
     { label: "Dashboard", href: "/dashboard", icon: IconBrandTabler },
     { label: "Users", href: "/dashboard/users", icon: IconUsers },
-    { label: "Bookings", href: "/dashboard/bookings", icon: IconCalendar },
     { label: "Photographers", href: "/dashboard/photographers", icon: IconCamera },
+    { label: "Photos", href: "/dashboard/photos", icon: IconFileText },
+    { label: "Bookings", href: "/dashboard/bookings", icon: IconCalendar },
     { label: "Finances", href: "/dashboard/finances", icon: IconCurrencyDollar },
-    { label: "Content", href: "/dashboard/content", icon: IconFileText },
     { label: "Analytics", href: "/dashboard/analytics", icon: IconChartBar },
     { label: "Support", href: "/dashboard/support", icon: IconMessageCircle },
-    { label: "Notifications", href: "/dashboard/notifications", icon: IconBell },
     { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
     { label: "Logout", href: "/logout", icon: IconArrowLeft },
   ];
