@@ -3,11 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { IconChartBar, IconUsers, IconDownload, IconTrafficCone } from '@tabler/icons-react';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import AnalyticsCard from '@/components/analytics/AnalyticsCard';
-import TrafficSourcesChart from '@/components/analytics/TrafficSourcesChart';
-import UserEngagementChart from '@/components/analytics/UserEngagementChart';
-import FrequentLocationsMap from '@/components/analytics/FrequentLocationsMap';
-import { getUserEngagement, getTrafficSources, getFrequentLocations, getMostUsedBooking, getMostBookedPhotographer } from '@/lib/analytics';
+import dynamic from 'next/dynamic';
+
+// Dynamically import components with SSR disabled
+const AnalyticsCard = dynamic(() => import('@/components/analytics/AnalyticsCard'), { ssr: false });
+const TrafficSourcesChart = dynamic(() => import('@/components/analytics/TrafficSourcesChart'), { ssr: false });
+const UserEngagementChart = dynamic(() => import('@/components/analytics/UserEngagementChart'), { ssr: false });
+const FrequentLocationsMap = dynamic(() => import('@/components/analytics/FrequentLocationsMap'), { ssr: false });
+
+// Check for browser environment
+const isBrowser = typeof window !== 'undefined';
 
 const AnalyticsPage = () => {
   const [userEngagement, setUserEngagement] = useState([]);
@@ -20,6 +25,16 @@ const AnalyticsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!isBrowser) return; // Only fetch data in browser environment
+        
+        const { 
+          getUserEngagement, 
+          getTrafficSources, 
+          getFrequentLocations, 
+          getMostUsedBooking, 
+          getMostBookedPhotographer 
+        } = await import('@/lib/analytics');
+
         setLoading(true);
         const [engagement, traffic, locations, booking, photographer] = await Promise.all([
           getUserEngagement(),
@@ -45,7 +60,7 @@ const AnalyticsPage = () => {
   }, []);
 
   const handleDownloadAnalytics = () => {
-    // Implement download functionality
+    if (!isBrowser) return;
     alert('Downloading analytics data...');
   };
 
