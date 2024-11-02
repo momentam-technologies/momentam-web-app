@@ -8,6 +8,7 @@ import RevenueChart from '@/components/finances/RevenueChart';
 import PaymentMethodsChart from '@/components/finances/PaymentMethodsChart';
 import TransactionsTable from '@/components/finances/TransactionsTable';
 import PayoutManagement from '@/components/finances/PayoutManagement';
+import { getFinancialMetrics, getRecentTransactions, getPaymentMethods } from '@/lib/finances';
 
 const FinancePage = () => {
   const [financialData, setFinancialData] = useState({
@@ -22,42 +23,49 @@ const FinancePage = () => {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedTimeRange, setSelectedTimeRange] = useState('month');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulating data fetching
-    setFinancialData({
-      totalRevenue: 1500000,
-      totalProfit: 750000,
-      pendingPayouts: 250000,
-      dailyRevenue: 50000,
-      monthlyGrowth: 15,
-      losses: 50000,
-    });
-    setRevenueData([
-      { name: 'Jan', revenue: 400000, profit: 240000, loss: 40000 },
-      { name: 'Feb', revenue: 300000, profit: 139800, loss: 20000 },
-      { name: 'Mar', revenue: 500000, profit: 300000, loss: 50000 },
-      { name: 'Apr', revenue: 450000, profit: 280000, loss: 45000 },
-      { name: 'May', revenue: 600000, profit: 380000, loss: 60000 },
-      { name: 'Jun', revenue: 550000, profit: 330000, loss: 55000 },
-    ]);
-    setRecentTransactions([
-      { id: 1, type: 'incoming', amount: 50000, description: 'Booking payment from John Doe', date: '2023-06-15' },
-      { id: 2, type: 'outgoing', amount: 35000, description: 'Photographer payout to Jane Smith', date: '2023-06-14' },
-      { id: 3, type: 'incoming', amount: 75000, description: 'Booking payment from Alice Johnson', date: '2023-06-13' },
-      { id: 4, type: 'outgoing', amount: 5000, description: 'Refund to Bob Williams', date: '2023-06-12' },
-      { id: 5, type: 'incoming', amount: 60000, description: 'Booking payment from Charlie Brown', date: '2023-06-11' },
-    ]);
-    setPaymentMethods([
-      { name: 'Credit Card', value: 400 },
-      { name: 'Bank Transfer', value: 300 },
-      { name: 'PayPal', value: 200 },
-      { name: 'Mobile Money', value: 100 },
-    ]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [metrics, transactions, methods] = await Promise.all([
+          getFinancialMetrics(),
+          getRecentTransactions(),
+          getPaymentMethods()
+        ]);
+
+        setFinancialData(metrics);
+        setRecentTransactions(transactions);
+        setPaymentMethods(methods);
+
+        // Example revenue data for the chart
+        setRevenueData([
+          { name: 'Jan', revenue: 400000, profit: 240000, loss: 40000 },
+          { name: 'Feb', revenue: 300000, profit: 139800, loss: 20000 },
+          { name: 'Mar', revenue: 500000, profit: 300000, loss: 50000 },
+          { name: 'Apr', revenue: 450000, profit: 280000, loss: 45000 },
+          { name: 'May', revenue: 600000, profit: 380000, loss: 60000 },
+          { name: 'Jun', revenue: 550000, profit: 330000, loss: 55000 },
+        ]);
+      } catch (error) {
+        console.error('Error fetching financial data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [selectedTimeRange]);
 
   return (
-    <div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+      className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen"
+    >
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Overview</h1>
         <div className="flex items-center space-x-4">
@@ -77,32 +85,64 @@ const FinancePage = () => {
         </div>
       </div>
       
-      <ErrorBoundary>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <FinanceCard title="Total Revenue" value={financialData.totalRevenue} iconType="revenue" change={financialData.monthlyGrowth} />
-          <FinanceCard title="Total Profit" value={financialData.totalProfit} iconType="profit" change={financialData.monthlyGrowth} />
-          <FinanceCard title="Pending Payouts" value={financialData.pendingPayouts} iconType="payouts" />
-          <FinanceCard title="Daily Revenue" value={financialData.dailyRevenue} iconType="dailyRevenue" />
-          <FinanceCard title="Monthly Growth" value={financialData.monthlyGrowth} iconType="growth" />
-          <FinanceCard title="Losses" value={financialData.losses} iconType="losses" />
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <p className="text-lg text-gray-500 dark:text-gray-300">Loading financial data...</p>
         </div>
-      </ErrorBoundary>
+      ) : (
+        <>
+          <ErrorBoundary>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0, scale: 0.8 },
+                visible: { opacity: 1, scale: 1, transition: { delay: 0.2, staggerChildren: 0.1 } }
+              }}
+            >
+              {Object.entries(financialData).map(([key, value], index) => (
+                <motion.div key={index} variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+                  <FinanceCard title={key.replace(/([A-Z])/g, ' $1')} value={value} iconType={key} />
+                </motion.div>
+              ))}
+            </motion.div>
+          </ErrorBoundary>
 
-      <ErrorBoundary>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <RevenueChart data={revenueData} />
-          <PaymentMethodsChart data={paymentMethods} />
-        </div>
-      </ErrorBoundary>
+          <ErrorBoundary>
+            <motion.div
+              className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <RevenueChart data={revenueData} />
+              <PaymentMethodsChart data={paymentMethods} />
+            </motion.div>
+          </ErrorBoundary>
 
-      <ErrorBoundary>
-        <TransactionsTable transactions={recentTransactions} />
-      </ErrorBoundary>
+          <ErrorBoundary>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <TransactionsTable transactions={recentTransactions} />
+            </motion.div>
+          </ErrorBoundary>
 
-      <ErrorBoundary>
-        <PayoutManagement pendingPayouts={financialData.pendingPayouts} />
-      </ErrorBoundary>
-    </div>
+          <ErrorBoundary>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <PayoutManagement pendingPayouts={financialData.pendingPayouts} />
+            </motion.div>
+          </ErrorBoundary>
+        </>
+      )}
+    </motion.div>
   );
 };
 

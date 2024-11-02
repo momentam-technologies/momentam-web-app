@@ -29,7 +29,7 @@ export function SidebarDemo() {
     { label: "Bookings", href: "/dashboard/bookings", icon: IconCalendar },
     { label: "Finances", href: "/dashboard/finances", icon: IconCurrencyDollar },
     { label: "Analytics", href: "/dashboard/analytics", icon: IconChartBar },
-    { label: "Support", href: "/dashboard/support", icon: IconMessageCircle },
+    { label: "Messages", href: "/dashboard/messages", icon: IconMessageCircle },
     { label: "Settings", href: "/dashboard/settings", icon: IconSettings },
     { label: "Logout", href: "/logout", icon: IconArrowLeft },
   ];
