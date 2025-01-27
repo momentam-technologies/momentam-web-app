@@ -73,7 +73,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden"
+        className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -166,7 +166,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         </div>
 
         {/* Photos Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 h-full overflow-y-auto p-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {booking.photos.map((photo) => (
               <div
