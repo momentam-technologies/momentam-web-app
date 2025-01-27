@@ -6,7 +6,7 @@ import { getPhotosByBookings, getPhotoStats } from '@/lib/photos';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import { format } from 'date-fns';
 import DashboardCard from '@/components/ui/DashboardCard';
 
