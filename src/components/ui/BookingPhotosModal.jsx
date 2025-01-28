@@ -1,21 +1,33 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { format } from 'date-fns';
-import { IconX, IconCheck, IconX as IconReject, IconEdit, IconDownload, 
-         IconUser, IconCalendar, IconCurrencyDollar, IconPhoto, IconWand } from '@tabler/icons-react';
-import { updatePhoto, bulkUpdatePhotos } from '@/lib/photos';
-import toast from 'react-hot-toast';
-import dynamic from 'next/dynamic';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { format } from "date-fns";
+import {
+  IconX,
+  IconCheck,
+  IconX as IconReject,
+  IconEdit,
+  IconDownload,
+  IconUser,
+  IconCalendar,
+  IconCurrencyDollar,
+  IconPhoto,
+  IconWand,
+} from "@tabler/icons-react";
+import { updatePhoto, bulkUpdatePhotos, bulkDownloadAsZip } from "@/lib/photos";
+import toast from "react-hot-toast";
+import dynamic from "next/dynamic";
 
 // Dynamically import BulkPhotoEditor with SSR disabled
-const BulkPhotoEditor = dynamic(() => import('./BulkPhotoEditor'), { ssr: false });
+const BulkPhotoEditor = dynamic(() => import("./BulkPhotoEditor"), {
+  ssr: false,
+});
 
 const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [viewMode, setViewMode] = useState('original'); // 'original' or 'edited'
+  const [viewMode, setViewMode] = useState("original"); // 'original' or 'edited'
 
   const handleStatusUpdate = async (photoId, status) => {
     try {
@@ -24,8 +36,8 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
       toast.success(`Photo ${status} successfully`);
       onUpdate();
     } catch (error) {
-      console.error('Error updating photo status:', error);
-      toast.error('Failed to update photo status');
+      console.error("Error updating photo status:", error);
+      toast.error("Failed to update photo status");
     } finally {
       setIsProcessing(false);
     }
@@ -33,13 +45,13 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
 
   const handleBulkAction = async (action) => {
     if (selectedPhotos.length === 0) {
-      toast.error('No photos selected');
+      toast.error("No photos selected");
       return;
     }
 
     try {
       setIsProcessing(true);
-      if (action === 'edit') {
+      if (action === "edit") {
         setShowBulkEditor(true);
       } else {
         await bulkUpdatePhotos(selectedPhotos, { status: action });
@@ -48,8 +60,8 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         onUpdate();
       }
     } catch (error) {
-      console.error('Error performing bulk action:', error);
-      toast.error('Failed to update photos');
+      console.error("Error performing bulk action:", error);
+      toast.error("Failed to update photos");
     } finally {
       setIsProcessing(false);
     }
@@ -57,8 +69,31 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
 
   // Add function to select all photos
   const handleSelectAll = () => {
-    setSelectedPhotos(booking.photos.map(photo => photo.$id));
+    setSelectedPhotos(booking.photos.map((photo) => photo.$id));
     setShowBulkEditor(true);
+  };
+
+  const handleBulkDownload = async () => {
+    if (selectedPhotos.length === 0) {
+      toast.error("No photos selected");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      const photos = booking.photos.filter((photo) =>
+        selectedPhotos.includes(photo.$id)
+      );
+      const photoUrls = photos.map((photo) => photo.photoUrl);
+
+      await bulkDownloadAsZip(photoUrls);
+      setSelectedPhotos([]);
+    } catch (error) {
+      console.error("Error downloading photos:", error);
+      toast.error("Failed to download photos");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -74,7 +109,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-auto"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
@@ -84,7 +119,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 {booking.client.name}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(booking.booking.date), 'PPP')}
+                {format(new Date(booking.booking.date), "PPP")}
               </p>
             </div>
             <button
@@ -130,32 +165,45 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setViewMode(prev => prev === 'original' ? 'edited' : 'original')}
+                onClick={() =>
+                  setViewMode((prev) =>
+                    prev === "original" ? "edited" : "original"
+                  )
+                }
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
               >
-                {viewMode === 'original' ? 'Show Edited' : 'Show Original'}
+                {viewMode === "original" ? "Show Edited" : "Show Original"}
               </button>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {selectedPhotos.length} selected
               </span>
             </div>
             {selectedPhotos.length > 0 && (
-              <div className="space-x-2">
+              <div className="flex gap-3">
                 <button
-                  onClick={() => handleBulkAction('edit')}
+                  onClick={() => handleBulkAction("edit")}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
                 >
                   <IconWand size={20} />
                   <span>Edit Selected</span>
                 </button>
+
                 <button
-                  onClick={() => handleBulkAction('approved')}
+                  onClick={() => handleBulkDownload()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+                >
+                  <IconDownload size={20} />
+                  <span>Download Selected</span>
+                </button>
+
+                <button
+                  onClick={() => handleBulkAction("approved")}
                   className="px-4 py-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg"
                 >
                   Approve Selected
                 </button>
                 <button
-                  onClick={() => handleBulkAction('rejected')}
+                  onClick={() => handleBulkAction("rejected")}
                   className="px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg"
                 >
                   Reject Selected
@@ -172,16 +220,18 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
               <div
                 key={photo.$id}
                 className={`relative aspect-square group ${
-                  selectedPhotos.includes(photo.$id) ? 'ring-2 ring-blue-500' : ''
+                  selectedPhotos.includes(photo.$id)
+                    ? "ring-2 ring-blue-500"
+                    : ""
                 }`}
               >
                 {/* Selection Overlay */}
                 <div
                   className="absolute inset-0 z-10 cursor-pointer"
                   onClick={() => {
-                    setSelectedPhotos(prev =>
+                    setSelectedPhotos((prev) =>
                       prev.includes(photo.$id)
-                        ? prev.filter(id => id !== photo.$id)
+                        ? prev.filter((id) => id !== photo.$id)
                         : [...prev, photo.$id]
                     );
                   }}
@@ -189,7 +239,11 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
 
                 {/* Photo */}
                 <Image
-                  src={viewMode === 'edited' && photo.editedVersion ? photo.editedVersion.editedUrl : photo.photoUrl}
+                  src={
+                    viewMode === "edited" && photo.editedVersion
+                      ? photo.editedVersion.editedUrl
+                      : photo.photoUrl
+                  }
                   alt="Photo"
                   layout="fill"
                   objectFit="cover"
@@ -197,14 +251,16 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 />
 
                 {/* Status Badge */}
-                <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  photo.status === 'approved'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                    : photo.status === 'rejected'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400'
-                }`}>
-                  {photo.status || 'pending'}
+                <div
+                  className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                    photo.status === "approved"
+                      ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
+                      : photo.status === "rejected"
+                      ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
+                  }`}
+                >
+                  {photo.status || "pending"}
                 </div>
 
                 {/* Edited Badge */}
@@ -217,13 +273,13 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 {/* Actions Overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
                   <button
-                    onClick={() => handleStatusUpdate(photo.$id, 'approved')}
+                    onClick={() => handleStatusUpdate(photo.$id, "approved")}
                     className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
                   >
                     <IconCheck size={20} />
                   </button>
                   <button
-                    onClick={() => handleStatusUpdate(photo.$id, 'rejected')}
+                    onClick={() => handleStatusUpdate(photo.$id, "rejected")}
                     className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
                   >
                     <IconReject size={20} />
@@ -248,27 +304,29 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
       <AnimatePresence>
         {showBulkEditor && (
           <BulkPhotoEditor
-            photos={booking.photos.filter(photo => selectedPhotos.includes(photo.$id))}
+            photos={booking.photos.filter((photo) =>
+              selectedPhotos.includes(photo.$id)
+            )}
             onClose={() => setShowBulkEditor(false)}
             onSave={async (enhancedPhotos) => {
               try {
                 await Promise.all(
-                  enhancedPhotos.map(photo =>
+                  enhancedPhotos.map((photo) =>
                     updatePhoto(photo.$id, {
                       photoUrl: photo.enhancedUrl,
                       isEnhanced: true,
                       enhancedAt: new Date().toISOString(),
-                      settings: photo.settings
+                      settings: photo.settings,
                     })
                   )
                 );
-                toast.success('Photos enhanced successfully');
+                toast.success("Photos enhanced successfully");
                 setShowBulkEditor(false);
                 setSelectedPhotos([]);
                 onUpdate();
               } catch (error) {
-                console.error('Error saving enhanced photos:', error);
-                toast.error('Failed to save enhanced photos');
+                console.error("Error saving enhanced photos:", error);
+                toast.error("Failed to save enhanced photos");
               }
             }}
           />
@@ -278,4 +336,4 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   );
 };
 
-export default BookingPhotosModal; 
+export default BookingPhotosModal;
