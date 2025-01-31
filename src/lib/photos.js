@@ -1,9 +1,10 @@
 import { photographerDB, userDB, config } from "./appwrite-config";
 import { signInAnonymously } from "firebase/auth";
+import { uploadBytesResumable, ref } from "firebase/storage";
 import { Query } from "appwrite";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { auth } from "../config/storage";
+import { auth, storage } from "../config/storage";
 
 // Get all photos grouped by bookings
 export const getPhotosByBookings = async (
@@ -215,7 +216,7 @@ export const bulkUpdatePhotos = async (photoIds, updates) => {
 };
 
 // Download photo
-const handleDownload =  async (downloadURL) => {
+const handleDownload = async (downloadURL) => {
   if (!downloadURL) return;
   const link = document.createElement("a");
   link.href = downloadURL;
@@ -230,7 +231,7 @@ export const bulkDownloadAsZip = async (fileUrls) => {
   const zip = new JSZip();
   const folder = zip.folder("bulk_download"); // Create a folder in the ZIP
   await signInAnonymously(auth); // Sign in anonymously to Firebase
- 
+
   // Fetch and add each file to the ZIP
   await Promise.all(
     fileUrls.map(async (url) => {
@@ -239,11 +240,11 @@ export const bulkDownloadAsZip = async (fileUrls) => {
         url.lastIndexOf("?")
       );
       const response = await fetch(url);
-      
-      if(response.ok){
+
+      if (response.ok) {
         const blob = await response.blob();
         folder.file(filePath, blob);
-      }else{
+      } else {
         throw new Error("Error fetching file:" + filePath);
       }
     })
@@ -255,22 +256,34 @@ export const bulkDownloadAsZip = async (fileUrls) => {
 };
 
 // Upload photo
-// const handleUpload = (file) => {
-//   if (!file) return;
+const handleUpload = (file) => {
+  if (!file) return;
 
-//   const fileRef = ref(storage, `${file.name}`);
-//   const uploadTask = uploadBytesResumable(fileRef, file);
+  const fileRef = ref(storage, `${file.name}`);
+  uploadBytesResumable(fileRef, file);
+};
 
-//   uploadTask.on("state_changed", (snapshot) => {
-//     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-//     setUploadProgress(progress);
-//   }),
-//     (error) => {
-//       console.error(error);
-//     },
-//     () => {
-//       getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-//         setDownloadURL(downloadURL);
-//       });
-//     };
-// };  
+// Bulk upload photos
+export const bulkUpload = (files) => {
+  if (!files || files.length === 0) return;
+
+  files.forEach((file) => {
+    const fileRef = ref(storage, `${file.name}`);
+    const uploadTask = uploadBytesResumable(fileRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        if (snapshot.state == "success") {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      (error) => {
+        throw error;
+      }
+    );
+    
+  });
+};

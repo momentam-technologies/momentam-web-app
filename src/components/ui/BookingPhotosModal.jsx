@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -12,9 +12,10 @@ import {
   IconCalendar,
   IconCurrencyDollar,
   IconPhoto,
+  IconUpload,
   IconWand,
 } from "@tabler/icons-react";
-import { updatePhoto, bulkUpdatePhotos, bulkDownloadAsZip } from "@/lib/photos";
+import { updatePhoto, bulkUpdatePhotos, bulkDownloadAsZip, bulkUpload } from "@/lib/photos";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 
@@ -28,6 +29,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [viewMode, setViewMode] = useState("original"); // 'original' or 'edited'
+  const fileInputRef = useRef(null);
 
   const handleStatusUpdate = async (photoId, status) => {
     try {
@@ -67,7 +69,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     }
   };
 
-  // Add function to select all photos
+  // Function to select all photos
   const handleSelectAll = () => {
     setSelectedPhotos(booking.photos.map((photo) => photo.$id));
     setShowBulkEditor(true);
@@ -96,6 +98,24 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     }
   };
 
+  // Function to handle file change
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    try {
+      const succeeded = bulkUpload(files);
+      if (succeeded) {
+        toast.success("Photos uploaded successfully");
+        onUpdate();
+      } else {
+        toast.error("Failed to upload photos");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload photos");
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -111,105 +131,124 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {booking.client.name}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(booking.booking.date), "PPP")}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-full"
-            >
-              <IconX size={20} />
-            </button>
-          </div>
-
-          {/* Add Edit All Button */}
-          <div className="mt-4 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <IconUser className="text-blue-500" size={20} />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {booking.photographer.name}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <IconCalendar className="text-green-500" size={20} />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {booking.booking.package}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <IconCurrencyDollar className="text-yellow-500" size={20} />
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                TZS {parseFloat(booking.booking.price).toLocaleString()}
-              </span>
-            </div>
-            <button
-              onClick={handleSelectAll}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-            >
-              <IconWand size={20} />
-              <span>Edit All Photos</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Action Bar */}
-        <div className="p-4 bg-gray-50 dark:bg-neutral-700/50 border-b border-gray-200 dark:border-neutral-700">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() =>
-                  setViewMode((prev) =>
-                    prev === "original" ? "edited" : "original"
-                  )
-                }
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
-              >
-                {viewMode === "original" ? "Show Edited" : "Show Original"}
-              </button>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {selectedPhotos.length} selected
-              </span>
-            </div>
-            {selectedPhotos.length > 0 && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleBulkAction("edit")}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-                >
-                  <IconWand size={20} />
-                  <span>Edit Selected</span>
-                </button>
-
-                <button
-                  onClick={() => handleBulkDownload()}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-                >
-                  <IconDownload size={20} />
-                  <span>Download Selected</span>
-                </button>
-
-                <button
-                  onClick={() => handleBulkAction("approved")}
-                  className="px-4 py-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg"
-                >
-                  Approve Selected
-                </button>
-                <button
-                  onClick={() => handleBulkAction("rejected")}
-                  className="px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg"
-                >
-                  Reject Selected
-                </button>
+        <div className="sticky top-0 z-10">
+          {/* Header */}
+          <div className="p-4 border-b bg-white border-gray-200 dark:border-neutral-700">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {booking.client.name}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {format(new Date(booking.booking.date), "PPP")}
+                </p>
               </div>
-            )}
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-full"
+              >
+                <IconX size={20} />
+              </button>
+            </div>
+
+            {/* Add Edit All Button */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <IconUser className="text-blue-500" size={20} />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {booking.photographer.name}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <IconCalendar className="text-green-500" size={20} />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {booking.booking.package}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <IconCurrencyDollar className="text-yellow-500" size={20} />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  TZS {parseFloat(booking.booking.price).toLocaleString()}
+                </span>
+              </div>
+
+              {/* Upload input & btn */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                multiple
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+              <button
+                onClick={() => fileInputRef.current.click()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+              >
+                <IconUpload size={20} />
+                <span>Upload Photos</span>
+              </button>
+
+              <button
+                onClick={handleSelectAll}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+              >
+                <IconWand size={20} />
+                <span>Edit All Photos</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="p-4 bg-gray-50 dark:bg-neutral-700/50 border-b border-gray-200 dark:border-neutral-700">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() =>
+                    setViewMode((prev) =>
+                      prev === "original" ? "edited" : "original"
+                    )
+                  }
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+                >
+                  {viewMode === "original" ? "Show Edited" : "Show Original"}
+                </button>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {selectedPhotos.length} selected
+                </span>
+              </div>
+              {selectedPhotos.length > 0 && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleBulkAction("edit")}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+                  >
+                    <IconWand size={20} />
+                    <span>Edit Selected</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleBulkDownload()}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+                  >
+                    <IconDownload size={20} />
+                    <span>Download Selected</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleBulkAction("approved")}
+                    className="px-4 py-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg"
+                  >
+                    Approve Selected
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction("rejected")}
+                    className="px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg"
+                  >
+                    Reject Selected
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
