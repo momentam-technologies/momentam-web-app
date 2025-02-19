@@ -6,7 +6,7 @@ import { getPhotosByBookings, getPhotoStats } from '@/lib/photos';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
+import Image from "next/image";
 import { format } from 'date-fns';
 import DashboardCard from '@/components/ui/DashboardCard';
 
@@ -65,9 +65,8 @@ const PhotosPage = () => {
   }, [fetchBookings]);
 
   return (
-    <div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
+    (<div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
       <Toaster position="top-right" />
-
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Photos</h1>
@@ -75,7 +74,6 @@ const PhotosPage = () => {
           Manage and review photos by bookings
         </p>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <DashboardCard
@@ -114,7 +112,6 @@ const PhotosPage = () => {
           colorClass="text-red-500"
         />
       </div>
-
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
         <div className="flex-1 min-w-[200px]">
@@ -150,7 +147,6 @@ const PhotosPage = () => {
           </button>
         </div>
       </div>
-
       {/* Bookings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bookings.map((booking) => (
@@ -202,7 +198,6 @@ const PhotosPage = () => {
           </motion.div>
         ))}
       </div>
-
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center space-x-2">
@@ -245,7 +240,6 @@ const PhotosPage = () => {
           </button>
         </div>
       )}
-
       {/* Booking Photos Modal */}
       <AnimatePresence>
         {selectedBooking && (
@@ -256,7 +250,7 @@ const PhotosPage = () => {
           />
         )}
       </AnimatePresence>
-    </div>
+    </div>)
   );
 };
 

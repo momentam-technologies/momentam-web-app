@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ClientWrapper>
             <div className="main-content">{children}</div>
-            <div className="small-screen-notice hidden fixed inset-0 flex items-center justify-center bg-white dark:bg-neutral-800">
+            <div className="small-screen-notice hidden fixed inset-0 items-center justify-center bg-white dark:bg-neutral-800">
               <div className="notice-content text-center p-8 max-w-md">
                 <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6 animate-fade-in">
                   Momentam
