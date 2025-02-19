@@ -15,7 +15,13 @@ import {
   IconUpload,
   IconWand,
 } from "@tabler/icons-react";
-import { updatePhoto, bulkUpdatePhotos, bulkDownloadAsZip, bulkUpload } from "@/lib/photos";
+import {
+  updatePhoto,
+  bulkUpdatePhotos,
+  bulkDownloadAsZip,
+  uploadPhotoToFirebase,
+  saveEditedPhotos,
+} from "@/lib/photos";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 
@@ -86,9 +92,11 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
       const photos = booking.photos.filter((photo) =>
         selectedPhotos.includes(photo.$id)
       );
-      const photoUrls = photos.map((photo) => photo.photoUrl);
+      const formattedPhotos = photos.map((photo) => {
+        return { url: photo.photoUrl, photoId: photo.$id };
+      });
 
-      await bulkDownloadAsZip(photoUrls);
+      await bulkDownloadAsZip(formattedPhotos);
       setSelectedPhotos([]);
     } catch (error) {
       console.error("Error downloading photos:", error);
@@ -102,9 +110,15 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+    
     try {
-      const succeeded = bulkUpload(files);
-      if (succeeded) {
+      const photos = await Promise.all(
+        files.map((file) => uploadPhotoToFirebase(file))
+      );
+
+      const {success} = await saveEditedPhotos(photos);
+
+      if (success) {
         toast.success("Photos uploaded successfully");
         onUpdate();
       } else {
@@ -131,7 +145,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10">
+        <div className="sticky top-0 z-20">
           {/* Header */}
           <div className="p-4 border-b bg-white border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">

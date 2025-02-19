@@ -1,7 +1,7 @@
 import { photographerDB, userDB, config } from "./appwrite-config";
 import { signInAnonymously } from "firebase/auth";
-import { uploadBytesResumable, ref } from "firebase/storage";
-import { Query } from "appwrite";
+import { uploadBytes, ref, getDownloadURL } from "firebase/storage";
+import { Query, ID } from "appwrite";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { auth, storage } from "../config/storage";
@@ -191,9 +191,10 @@ export const updatePhoto = async (photoId, updates) => {
       photoId,
       {
         ...updates,
-        updatedAt: new Date().toISOString(),
+        uploadDate: new Date().toISOString(),
       }
     );
+    console.log("Updated photo:",updatePhoto);
 
     return updatedPhoto;
   } catch (error) {
@@ -227,19 +228,19 @@ const handleDownload = async (downloadURL) => {
 };
 
 // Bulk download photos
-export const bulkDownloadAsZip = async (fileUrls) => {
+export const bulkDownloadAsZip = async (files) => {
   const zip = new JSZip();
   const folder = zip.folder("bulk_download"); // Create a folder in the ZIP
   await signInAnonymously(auth); // Sign in anonymously to Firebase
 
   // Fetch and add each file to the ZIP
   await Promise.all(
-    fileUrls.map(async (url) => {
-      const filePath = url.slice(
-        url.lastIndexOf("/") + 1,
-        url.lastIndexOf("?")
+    files.map(async (file) => {
+      const filePath = file.photoId + file.url.slice(
+        file.url.lastIndexOf("."),
+        file.url.lastIndexOf("?")
       );
-      const response = await fetch(url);
+      const response = await fetch(file.url);
 
       if (response.ok) {
         const blob = await response.blob();
@@ -256,34 +257,26 @@ export const bulkDownloadAsZip = async (fileUrls) => {
 };
 
 // Upload photo
-const handleUpload = (file) => {
-  if (!file) return;
-
-  const fileRef = ref(storage, `${file.name}`);
-  uploadBytesResumable(fileRef, file);
+export const uploadPhotoToFirebase = async (photo) => {
+  await signInAnonymously(auth);
+  const storageRef = ref(storage, `${photo.name}`);
+  await uploadBytes(storageRef, photo);
+  const downloadUrl = await getDownloadURL(storageRef);
+  const photoId = photo.name.slice(0, photo.name.lastIndexOf("."));
+  return {url: downloadUrl, id: photoId};
 };
 
-// Bulk upload photos
-export const bulkUpload = (files) => {
-  if (!files || files.length === 0) return;
+export const saveEditedPhotos = async (
+  photos
+) => {
+  try {// Implement deletiing photos in firebase storage before updating, 
+    // Idea is attach the name of the photo when downloading so that when deleting can be used to generate ref
+    const updatePromises = photos.map((photo) => updatePhoto(photo.id, {photoUrl: photo.url}));
 
-  files.forEach((file) => {
-    const fileRef = ref(storage, `${file.name}`);
-    const uploadTask = uploadBytesResumable(fileRef, file);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        if (snapshot.state == "success") {
-          return true;
-        } else {
-          return false;
-        }
-      },
-      (error) => {
-        throw error;
-      }
-    );
-    
-  });
+    await Promise.all(updatePromises);
+    return { success: true, message: "All photos uploaded successfully" };
+  } catch (error) {
+    console.error("Error bulk uploading photos:", error);
+    throw error;
+  }
 };
