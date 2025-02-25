@@ -1,17 +1,23 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { IconEye, IconEdit, IconTrash, IconBookmark } from '@tabler/icons-react';
-import { format } from 'date-fns';
+import React from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import {
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconBookmark,
+} from "@tabler/icons-react";
+import { format } from "date-fns";
 
-const UsersTable = ({ 
-  users, 
-  onViewUser, 
-  onEditUser, 
+const UsersTable = ({
+  users,
+  onViewUser,
+  onEditUser,
   onDeleteUser,
   selectedUsers,
   onSelectUser,
-  onSelectAll 
+  onSelectAll,
+  isLoading
 }) => {
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-lg shadow overflow-hidden">
@@ -28,16 +34,28 @@ const UsersTable = ({
                 />
               </div>
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               User
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Bookings
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Last Active
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Actions
             </th>
           </tr>
@@ -63,7 +81,7 @@ const UsersTable = ({
                 <div className="flex items-center">
                   <div className="flex-shrink-0 h-10 w-10 relative">
                     <Image
-                      src={user.avatar || '/default-avatar.png'}
+                      src={user.avatar || "/default-avatar.png"}
                       alt=""
                       layout="fill"
                       className="rounded-full"
@@ -82,11 +100,13 @@ const UsersTable = ({
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
                   <IconBookmark size={16} className="text-blue-500" />
-                  <span className="text-sm text-gray-900 dark:text-white">{user.totalBookings || 0}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {user.totalBookings || 0}
+                  </span>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(user.lastLogin || user.$updatedAt), 'PPp')}
+                {format(new Date(user.lastLogin || user.$updatedAt), "PPp")}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button
@@ -112,6 +132,15 @@ const UsersTable = ({
           ))}
         </tbody>
       </table>
+      {isLoading && (
+        <div className="flex justify-center items-center h-64">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getPhotographerPayouts, processPayouts } from '@/lib/finances';
+// import { getPhotographerPayouts, processPayouts } from '@/lib/finances';
 import { IconDownload, IconSearch } from '@tabler/icons-react';
 
 const PayoutProcessingModal = ({ show, onClose }) => {
@@ -9,39 +9,39 @@ const PayoutProcessingModal = ({ show, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchPayouts = async () => {
-      try {
-        setLoading(true);
-        const data = await getPhotographerPayouts();
-        setPayouts(data);
-      } catch (error) {
-        console.error('Error fetching payouts:', error);
-        setError('Failed to load payouts. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchPayouts = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const data = await getPhotographerPayouts();
+  //       setPayouts(data);
+  //     } catch (error) {
+  //       console.error('Error fetching payouts:', error);
+  //       setError('Failed to load payouts. Please try again.');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    if (show) {
-      fetchPayouts();
-    }
-  }, [show]);
+  //   if (show) {
+  //     fetchPayouts();
+  //   }
+  // }, [show]);
 
   const handleProcessPayouts = async () => {
-    if (!window.confirm('Are you sure you want to process these payouts?')) return;
+    // if (!window.confirm('Are you sure you want to process these payouts?')) return;
 
-    try {
-      setLoading(true);
-      await processPayouts(payouts);
-      alert('Payouts processed successfully!');
-      onClose();
-    } catch (error) {
-      console.error('Error processing payouts:', error);
-      setError('Failed to process payouts. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    // try {
+    //   setLoading(true);
+    //   await processPayouts(payouts);
+    //   alert('Payouts processed successfully!');
+    //   onClose();
+    // } catch (error) {
+    //   console.error('Error processing payouts:', error);
+    //   setError('Failed to process payouts. Please try again.');
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   const filteredPayouts = payouts.filter(payout =>

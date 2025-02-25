@@ -1,21 +1,22 @@
 import { userDB, photographerDB, config } from './appwrite-config';
 import { Query, ID } from 'appwrite';
-import { initializeApp } from 'firebase/app';
+// import { initializeApp } from 'firebase/app';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {storage} from  '../config/storage'
 
 // Firebase configuration from mobile app
-const firebaseConfig = {
-    apiKey: "AIzaSyAQrXk6YU_lmQPwXLsQcYK2Dy1z6oYhC6w",
-    authDomain: "momentam-f9e3b.firebaseapp.com",
-    projectId: "momentam-f9e3b",
-    storageBucket: "momentam-f9e3b.appspot.com",
-    messagingSenderId: "1072430525969",
-    appId: "1:1072430525969:web:041d27f34d5b4c8f36dfd6"
-};
+// const firebaseConfig = {
+//     apiKey: "AIzaSyAQrXk6YU_lmQPwXLsQcYK2Dy1z6oYhC6w",
+//     authDomain: "momentam-f9e3b.firebaseapp.com",
+//     projectId: "momentam-f9e3b",
+//     storageBucket: "momentam-f9e3b.appspot.com",
+//     messagingSenderId: "1072430525969",
+//     appId: "1:1072430525969:web:041d27f34d5b4c8f36dfd6"
+// };
 
 // Initialize Firebase
-const firebaseApp = initializeApp(firebaseConfig);
-const storage = getStorage(firebaseApp);
+// const firebaseApp = initializeApp(firebaseConfig);
+// const storage = getStorage(firebaseApp);
 
 // Get all users with pagination and filters
 export const getUsers = async (limit = 10, offset = 0, filters = {}) => {

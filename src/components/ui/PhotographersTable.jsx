@@ -1,18 +1,26 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { IconEye, IconEdit, IconTrash, IconBookmark, IconStar, IconCheck, IconX } from '@tabler/icons-react';
-import { format } from 'date-fns';
+import React from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import {
+  IconEye,
+  IconEdit,
+  IconTrash,
+  IconBookmark,
+  IconStar,
+  IconCheck,
+  IconX,
+} from "@tabler/icons-react";
+import { format } from "date-fns";
 
-const PhotographersTable = ({ 
-  photographers, 
-  onViewPhotographer, 
-  onEditPhotographer, 
+const PhotographersTable = ({
+  photographers,
+  onViewPhotographer,
+  onEditPhotographer,
   onDeletePhotographer,
   selectedPhotographers,
   onSelectPhotographer,
   onSelectAll,
-  isLoading 
+  isLoading,
 }) => {
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-lg shadow overflow-hidden">
@@ -24,24 +32,41 @@ const PhotographersTable = ({
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedPhotographers.length === photographers.length}
+                  checked={
+                    selectedPhotographers.length === photographers.length
+                  }
                   onChange={onSelectAll}
                 />
               </div>
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Photographer
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Stats
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Status
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Last Active
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+            >
               Actions
             </th>
           </tr>
@@ -67,7 +92,7 @@ const PhotographersTable = ({
                 <div className="flex items-center">
                   <div className="flex-shrink-0 h-10 w-10 relative">
                     <Image
-                      src={photographer.avatar || '/default-avatar.png'}
+                      src={photographer.avatar || "/default-avatar.png"}
                       alt=""
                       layout="fill"
                       className="rounded-full"
@@ -87,20 +112,26 @@ const PhotographersTable = ({
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
                     <IconBookmark size={16} className="text-blue-500" />
-                    <span className="text-sm text-gray-900 dark:text-white">{photographer.totalBookings || 0} Bookings</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {photographer.totalBookings || 0} Bookings
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <IconStar size={16} className="text-yellow-500" />
-                    <span className="text-sm text-gray-900 dark:text-white">{photographer.rating || 0} Rating</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {photographer.rating || 0} Rating
+                    </span>
                   </div>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  photographer.verified 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400'
-                }`}>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    photographer.verified
+                      ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
+                  }`}
+                >
                   {photographer.verified ? (
                     <>
                       <IconCheck size={12} className="mr-1" />
@@ -115,7 +146,10 @@ const PhotographersTable = ({
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(photographer.lastLogin || photographer.$updatedAt), 'PPp')}
+                {format(
+                  new Date(photographer.lastLogin || photographer.$updatedAt),
+                  "PPp"
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button
@@ -141,8 +175,17 @@ const PhotographersTable = ({
           ))}
         </tbody>
       </table>
+      {isLoading && (
+        <div className="flex justify-center items-center h-64">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-export default PhotographersTable; 
+export default PhotographersTable;

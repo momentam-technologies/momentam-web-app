@@ -25,13 +25,13 @@ const PhotosPage = () => {
     photographerCount: 0,
     clientCount: 0,
     monthlyChange: 0,
-    yearOverYearChange: 0
+    yearOverYearChange: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("completed");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const bookingsPerPage = 12;
@@ -40,21 +40,25 @@ const PhotosPage = () => {
     try {
       setIsLoading(true);
       const filters = {
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-        search: searchTerm || undefined
+        status: filterStatus !== "all" ? filterStatus : undefined,
+        search: searchTerm || undefined,
       };
 
       const [bookingsData, statsData] = await Promise.all([
-        getPhotosByBookings(bookingsPerPage, (currentPage - 1) * bookingsPerPage, filters),
-        getPhotoStats()
+        getPhotosByBookings(
+          bookingsPerPage,
+          (currentPage - 1) * bookingsPerPage,
+          filters
+        ),
+        getPhotoStats(),
       ]);
 
       setBookings(bookingsData.bookings);
       setTotalPages(Math.ceil(bookingsData.total / bookingsPerPage));
       setStats(statsData);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
-      toast.error('Failed to load photos');
+      console.error("Error fetching bookings:", error);
+      toast.error("Failed to load photos");
     } finally {
       setIsLoading(false);
     }
@@ -64,12 +68,51 @@ const PhotosPage = () => {
     fetchBookings();
   }, [fetchBookings]);
 
+  // Function to get page numbers to display
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    if (totalPages <= 5) {
+      // If 5 or fewer pages, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+
+      // Calculate start and end of page numbers to show
+      let start = Math.max(currentPage - 1, 2);
+      let end = Math.min(currentPage + 1, totalPages - 1);
+
+      // Add ellipsis after first page if needed
+      if (start > 2) {
+        pageNumbers.push("...");
+      }
+
+      // Add pages around current page
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis before last page if needed
+      if (end < totalPages - 1) {
+        pageNumbers.push("...");
+      }
+
+      // Always show last page
+      pageNumbers.push(totalPages);
+    }
+    return pageNumbers;
+  };
+
   return (
-    (<div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
+    <div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
       <Toaster position="top-right" />
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Photos</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Photos
+        </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           Manage and review photos by bookings
         </p>
@@ -123,7 +166,10 @@ const PhotosPage = () => {
               placeholder="Search by client name or booking ID..."
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <IconSearch className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <IconSearch
+              className="absolute left-3 top-2.5 text-gray-400"
+              size={20}
+            />
           </div>
         </div>
 
@@ -178,7 +224,7 @@ const PhotosPage = () => {
                   {booking.client.name}
                 </h3>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(new Date(booking.booking.date), 'PP')}
+                  {format(new Date(booking.booking.date), "PP")}
                 </span>
               </div>
 
@@ -186,12 +232,16 @@ const PhotosPage = () => {
                 <span className="text-gray-500 dark:text-gray-400">
                   {booking.totalPhotos} photos
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  booking.pendingPhotos > 0
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400'
-                    : 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                }`}>
-                  {booking.pendingPhotos > 0 ? 'Pending Review' : 'All Reviewed'}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    booking.pendingPhotos > 0
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400"
+                      : "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
+                  }`}
+                >
+                  {booking.pendingPhotos > 0
+                    ? "Pending Review"
+                    : "All Reviewed"}
                 </span>
               </div>
             </div>
@@ -202,38 +252,45 @@ const PhotosPage = () => {
       {totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center space-x-2">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
             className={`px-4 py-2 rounded-lg ${
               currentPage === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500'
-                : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
             }`}
           >
             Previous
           </button>
 
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === page
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {page}
-            </button>
+          {getPageNumbers().map((page, index) => (
+            <React.Fragment key={index}>
+              {typeof page === "number" ? (
+                <button
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-4 py-2 rounded-lg ${
+                    currentPage === page
+                      ? "bg-blue-500 text-white"
+                      : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  {page}
+                </button>
+              ) : (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+            </React.Fragment>
           ))}
 
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className={`px-4 py-2 rounded-lg ${
               currentPage === totalPages
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500'
-                : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
             }`}
           >
             Next
@@ -250,7 +307,7 @@ const PhotosPage = () => {
           />
         )}
       </AnimatePresence>
-    </div>)
+    </div>
   );
 };
 
