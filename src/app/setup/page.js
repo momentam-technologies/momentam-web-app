@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import bcrypt from "bcryptjs";
-import { addAdminUser, getAdminUsers } from "@/lib/appwrite";
+// import { addAdminUser, getAdminUsers } from "@/lib/appwrite";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -15,26 +15,26 @@ export default function SetupPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    const checkSuperAdminExists = async () => {
-      const { admins } = await getAdminUsers(1, 0);
-      if (admins.length > 0) {
-        router.push("/login"); // Redirect to login if super admin already exists
-      }
-    };
-    checkSuperAdminExists();
-  }, [router]);
+  // useEffect(() => {
+  //   const checkSuperAdminExists = async () => {
+  //     const { admins } = await getAdminUsers(1, 0);
+  //     if (admins.length > 0) {
+  //       router.push("/login"); // Redirect to login if super admin already exists
+  //     }
+  //   };
+  //   checkSuperAdminExists();
+  // }, [router]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await addAdminUser({ name, email, password: hashedPassword, role: "superadmin" });
-      router.push("/login"); // Redirect to login after creation
-    } catch (error) {
-      setError("Failed to create super admin. Please try again.");
-      console.error("Error creating super admin:", error);
-    }
+    // e.preventDefault();
+    // try {
+    //   const hashedPassword = await bcrypt.hash(password, 10);
+    //   await addAdminUser({ name, email, password: hashedPassword, role: "superadmin" });
+    //   router.push("/login"); // Redirect to login after creation
+    // } catch (error) {
+    //   setError("Failed to create super admin. Please try again.");
+    //   console.error("Error creating super admin:", error);
+    // }
   };
 
   return (

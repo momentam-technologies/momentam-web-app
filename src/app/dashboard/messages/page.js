@@ -13,22 +13,15 @@ const MessagesContent = () => {
   const messagesEndRef = useRef(null);
   const searchParams = useSearchParams();
 
-  // Demo data
-  const demoConversations = [
-    { id: 1, name: 'John Doe', lastMessage: 'Hello, I have a question about my booking.' },
-    { id: 2, name: 'Jane Smith', lastMessage: 'Can you help me with my account?' },
-    { id: 3, name: 'Mike Johnson', lastMessage: 'Thanks for your quick response!' },
-  ];
-
-  const demoMessages = [
-    { id: 1, content: 'Hello, how can I help you?', sender: 'me', timestamp: '10:00 AM' },
-    { id: 2, content: 'I have a question about my booking.', sender: 'other', timestamp: '10:02 AM' },
-    { id: 3, content: 'Sure, what would you like to know?', sender: 'me', timestamp: '10:05 AM' },
-    { id: 4, content: 'Can I change the date of my photoshoot?', sender: 'other', timestamp: '10:07 AM' },
-    { id: 5, content: 'Of course! Let me check the available dates for you.', sender: 'me', timestamp: '10:10 AM' },
-  ];
-
+  
   useEffect(() => {
+    // Demo data
+    const demoConversations = [
+      { id: 1, name: 'John Doe', lastMessage: 'Hello, I have a question about my booking.' },
+      { id: 2, name: 'Jane Smith', lastMessage: 'Can you help me with my account?' },
+      { id: 3, name: 'Mike Johnson', lastMessage: 'Thanks for your quick response!' },
+    ];
+  
     const conversationId = searchParams.get('conversation');
     setConversations(demoConversations);
     if (conversationId) {
@@ -38,14 +31,22 @@ const MessagesContent = () => {
       }
     }
     setIsLoading(false);
-  }, [searchParams, demoConversations]);
+  }, [searchParams]);
 
-  useEffect(() => {
+  useEffect(() => {   
+    const demoMessages = [
+      { id: 1, content: 'Hello, how can I help you?', sender: 'me', timestamp: '10:00 AM' },
+      { id: 2, content: 'I have a question about my booking.', sender: 'other', timestamp: '10:02 AM' },
+      { id: 3, content: 'Sure, what would you like to know?', sender: 'me', timestamp: '10:05 AM' },
+      { id: 4, content: 'Can I change the date of my photoshoot?', sender: 'other', timestamp: '10:07 AM' },
+      { id: 5, content: 'Of course! Let me check the available dates for you.', sender: 'me', timestamp: '10:10 AM' },
+    ];
+    
     if (selectedConversation) {
       setMessages(demoMessages);
       scrollToBottom();
     }
-  }, [selectedConversation, demoMessages]);
+  }, [selectedConversation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

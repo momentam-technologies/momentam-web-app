@@ -13,11 +13,25 @@ export const getPhotosByBookings = async (
   filters = {}
 ) => {
   try {
+    let queries = [Query.limit(limit), Query.offset(offset)];
+
+    // Add filters if they exist
+    if (filters.status) {
+      queries.push(Query.equal("status", filters.status));
+    }
+    if (filters.search) {
+      queries.push(Query.search("name", filters.search));
+    }
+    if (filters.dateRange) {
+      queries.push(Query.greaterThan("$createdAt", filters.dateRange.start));
+      queries.push(Query.lessThan("$createdAt", filters.dateRange.end));
+    }
+
     // First get ALL bookings without limit
     const allBookings = await userDB.listDocuments(
       config.user.databaseId,
       config.user.collections.bookings,
-      [Query.orderDesc("$createdAt")]
+      [Query.orderDesc("$createdAt"), ...queries]
     );
 
     // Get photos for each booking
@@ -91,11 +105,11 @@ export const getPhotosByBookings = async (
       .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 
     // Apply pagination after getting all bookings
-    const paginatedBookings = validBookings.slice(offset, offset + limit);
+    // const paginatedBookings = validBookings.slice(offset, offset + limit);
 
     return {
-      bookings: paginatedBookings,
-      total: validBookings.length,
+      bookings: validBookings,
+      total: allBookings.total,
     };
   } catch (error) {
     console.error("Error getting photos by bookings:", error);
@@ -194,7 +208,7 @@ export const updatePhoto = async (photoId, updates) => {
         uploadDate: new Date().toISOString(),
       }
     );
-    console.log("Updated photo:",updatePhoto);
+    console.log("Updated photo:", updatePhoto);
 
     return updatedPhoto;
   } catch (error) {
@@ -236,10 +250,9 @@ export const bulkDownloadAsZip = async (files) => {
   // Fetch and add each file to the ZIP
   await Promise.all(
     files.map(async (file) => {
-      const filePath = file.photoId + file.url.slice(
-        file.url.lastIndexOf("."),
-        file.url.lastIndexOf("?")
-      );
+      const filePath =
+        file.photoId +
+        file.url.slice(file.url.lastIndexOf("."), file.url.lastIndexOf("?"));
       const response = await fetch(file.url);
 
       if (response.ok) {
@@ -263,15 +276,16 @@ export const uploadPhotoToFirebase = async (photo) => {
   await uploadBytes(storageRef, photo);
   const downloadUrl = await getDownloadURL(storageRef);
   const photoId = photo.name.slice(0, photo.name.lastIndexOf("."));
-  return {url: downloadUrl, id: photoId};
+  return { url: downloadUrl, id: photoId };
 };
 
-export const saveEditedPhotos = async (
-  photos
-) => {
-  try {// Implement deletiing photos in firebase storage before updating, 
+export const saveEditedPhotos = async (photos) => {
+  try {
+    //TODO:Implement deletiing photos in firebase storage before updating,
     // Idea is attach the name of the photo when downloading so that when deleting can be used to generate ref
-    const updatePromises = photos.map((photo) => updatePhoto(photo.id, {photoUrl: photo.url}));
+    const updatePromises = photos.map((photo) =>
+      updatePhoto(photo.id, { photoUrl: photo.url })
+    );
 
     await Promise.all(updatePromises);
     return { success: true, message: "All photos uploaded successfully" };

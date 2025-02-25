@@ -33,25 +33,24 @@ const PhotographerDetailsModal = ({ photographer, onClose }) => {
   const [photographerDetails, setPhotographerDetails] = useState(photographer);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchPhotographerDetails = async () => {
-    setIsLoading(true);
-    try {
-      const details = await getPhotographerDetails(photographer.$id);
-      setPhotographerDetails({
-        ...details,
-        totalBookings: details.stats?.totalBookings || 0,
-        completedBookings: details.stats?.completedBookings || 0,
-        totalEarnings: details.stats?.totalEarnings || 0,
-        rating: details.stats?.rating || 0
-      });
-    } catch (error) {
-      console.error('Error fetching photographer details:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchPhotographerDetails = async () => {
+      setIsLoading(true);
+      try {
+        const details = await getPhotographerDetails(photographer.$id);
+        setPhotographerDetails({
+          ...details,
+          totalBookings: details.stats?.totalBookings || 0,
+          completedBookings: details.stats?.completedBookings || 0,
+          totalEarnings: details.stats?.totalEarnings || 0,
+          rating: details.stats?.rating || 0
+        });
+      } catch (error) {
+        console.error('Error fetching photographer details:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     fetchPhotographerDetails();
   }, [photographer.$id]);
 

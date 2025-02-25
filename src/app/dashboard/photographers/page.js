@@ -22,24 +22,27 @@ const DeleteConfirmationModal = dynamic(() => import('@/components/ui/DeleteConf
 const PhotographersPage = () => {
   const [photographers, setPhotographers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPhotographers, setSelectedPhotographers] = useState([]);
   const [selectedPhotographer, setSelectedPhotographer] = useState(null);
   const [editingPhotographer, setEditingPhotographer] = useState(null);
   const [photographerToDelete, setPhotographerToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPhotographers, setTotalPhotographers] = useState(0);
-  const [filterType, setFilterType] = useState('all');
+  const [totalPages, setTotalPages] = useState(0);
+  const [filterType, setFilterType] = useState("all");
   const photographersPerPage = 10;
 
   const fetchPhotographers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await getPhotographers(photographersPerPage, (currentPage - 1) * photographersPerPage);
+      const result = await getPhotographers(
+        photographersPerPage,
+        (currentPage - 1) * photographersPerPage
+      );
       setPhotographers(result.photographers);
-      setTotalPhotographers(result.total);
+      setTotalPages(Math.ceil(result.total / photographersPerPage));
     } catch (error) {
-      toast.error('Failed to fetch photographers');
+      toast.error("Failed to fetch photographers");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -52,12 +55,53 @@ const PhotographersPage = () => {
 
   // ... Add handlers for CRUD operations, filtering, and search
 
+  // Function to get page numbers to display
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    if (totalPages <= 5) {
+      // If 5 or fewer pages, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always show first page
+      pageNumbers.push(1);
+
+      // Calculate start and end of page numbers to show
+      let start = Math.max(currentPage - 1, 2);
+      let end = Math.min(currentPage + 1, totalPages - 1);
+
+      // Add ellipsis after first page if needed
+      if (start > 2) {
+        pageNumbers.push("...");
+      }
+
+      // Add pages around current page
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+
+      // Add ellipsis before last page if needed
+      if (end < totalPages - 1) {
+        pageNumbers.push("...");
+      }
+
+      // Always show last page
+      pageNumbers.push(totalPages);
+    }
+    return pageNumbers;
+  };
+
   return (
     <div className="p-6 bg-gray-100 dark:bg-neutral-900 min-h-screen">
       <Toaster />
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Photographers</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage photographers and their portfolios</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          Photographers
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage photographers and their portfolios
+        </p>
       </div>
 
       {/* Action Bar */}
@@ -72,7 +116,10 @@ const PhotographersPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <IconSearch className="absolute right-3 top-2.5 text-gray-400" size={20} />
+            <IconSearch
+              className="absolute right-3 top-2.5 text-gray-400"
+              size={20}
+            />
           </div>
           <select
             className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -110,17 +157,69 @@ const PhotographersPage = () => {
         onDeletePhotographer={setPhotographerToDelete}
         selectedPhotographers={selectedPhotographers}
         onSelectPhotographer={(id) => {
-          setSelectedPhotographers(prev => 
-            prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+          setSelectedPhotographers((prev) =>
+            prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
           );
         }}
         onSelectAll={() => {
-          setSelectedPhotographers(prev => 
-            prev.length === photographers.length ? [] : photographers.map(p => p.$id)
+          setSelectedPhotographers((prev) =>
+            prev.length === photographers.length
+              ? []
+              : photographers.map((p) => p.$id)
           );
         }}
         isLoading={isLoading}
       />
+
+      {/* Update Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center space-x-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded-lg ${
+              currentPage === 1
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+            }`}
+          >
+            Previous
+          </button>
+
+          {getPageNumbers().map((page, index) => (
+            <React.Fragment key={index}>
+              {typeof page === "number" ? (
+                <button
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-4 py-2 rounded-lg ${
+                    currentPage === page
+                      ? "bg-blue-500 text-white"
+                      : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  {page}
+                </button>
+              ) : (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+            </React.Fragment>
+          ))}
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded-lg ${
+              currentPage === totalPages
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       <AnimatePresence>
@@ -138,11 +237,11 @@ const PhotographersPage = () => {
             onUpdatePhotographer={async (data) => {
               try {
                 await updatePhotographer(editingPhotographer.$id, data);
-                toast.success('Photographer updated successfully');
+                toast.success("Photographer updated successfully");
                 fetchPhotographers();
                 setEditingPhotographer(null);
               } catch (error) {
-                toast.error('Failed to update photographer');
+                toast.error("Failed to update photographer");
                 console.error(error);
               }
             }}
@@ -155,11 +254,11 @@ const PhotographersPage = () => {
             onConfirm={async () => {
               try {
                 await deletePhotographer(photographerToDelete.$id);
-                toast.success('Photographer deleted successfully');
+                toast.success("Photographer deleted successfully");
                 fetchPhotographers();
                 setPhotographerToDelete(null);
               } catch (error) {
-                toast.error('Failed to delete photographer');
+                toast.error("Failed to delete photographer");
                 console.error(error);
               }
             }}

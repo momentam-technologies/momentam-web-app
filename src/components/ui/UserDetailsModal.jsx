@@ -5,8 +5,8 @@ import { format, isValid } from 'date-fns';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { IconX, IconRefresh, IconUser, IconMail, IconPhone, IconCalendar, 
          IconClock, IconBookmark, IconStar, IconMapPin, IconClock as IconHistory, IconPhoto } from '@tabler/icons-react';
-import { getUserDetails } from '@/lib/appwrite';
-import { getReadableAddress } from '@/lib/appwrite';
+// import { getUserDetails } from '@/lib/appwrite';
+// import { getReadableAddress } from '@/lib/appwrite';
 
 const InfoItem = ({ icon: Icon, label, value }) => (
   <motion.div 
@@ -92,21 +92,21 @@ const UserDetailsModal = ({ user, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
 
   const fetchUserDetails = async () => {
-    setIsLoading(true);
-    try {
-      const details = await getUserDetails(user.$id);
-      setUserDetails({
-        ...details,
-        totalBookings: details.totalBookings || 0,
-        completedBookings: details.completedBookings || 0,
-        cancelledBookings: details.cancelledBookings || 0,
-        totalSpent: details.totalSpent || 0
-      });
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // setIsLoading(true);
+    // try {
+    //   const details = await getUserDetails(user.$id);
+    //   setUserDetails({
+    //     ...details,
+    //     totalBookings: details.totalBookings || 0,
+    //     completedBookings: details.completedBookings || 0,
+    //     cancelledBookings: details.cancelledBookings || 0,
+    //     totalSpent: details.totalSpent || 0
+    //   });
+    // } catch (error) {
+    //   console.error('Error fetching user details:', error);
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   useEffect(() => {
