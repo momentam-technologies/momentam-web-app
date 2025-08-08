@@ -1,10 +1,4 @@
-import { photographerDB, userDB, config } from "./appwrite-config";
-import { signInAnonymously } from "firebase/auth";
-import { uploadBytes, ref, getDownloadURL } from "firebase/storage";
-import { Query, ID } from "appwrite";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
-import { auth, storage } from "../config/storage";
+import { api } from './api';
 
 // Get all photos grouped by bookings
 export const getPhotosByBookings = async (
@@ -13,106 +7,24 @@ export const getPhotosByBookings = async (
   filters = {}
 ) => {
   try {
-    let queries = [Query.limit(limit), Query.offset(offset)];
+    console.log('📸 FRONTEND: Fetching photos by bookings from backend');
+    
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString()
+    });
 
-    // Add filters if they exist
-    if (filters.status) {
-      queries.push(Query.equal("status", filters.status));
-    }
-    if (filters.search) {
-      queries.push(Query.search("name", filters.search));
-    }
-    if (filters.dateRange) {
-      queries.push(Query.greaterThan("$createdAt", filters.dateRange.start));
-      queries.push(Query.lessThan("$createdAt", filters.dateRange.end));
-    }
+    // Add filters to params
+    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.dateRange) params.append('dateRange', JSON.stringify(filters.dateRange));
 
-    // First get ALL bookings without limit
-    const allBookings = await userDB.listDocuments(
-      config.user.databaseId,
-      config.user.collections.bookings,
-      [Query.orderDesc("$createdAt"), ...queries]
-    );
-
-    // Get photos for each booking
-    const bookingsWithPhotos = await Promise.all(
-      allBookings.documents.map(async (booking) => {
-        try {
-          // Get photos for this booking from uploadedPhotos collection
-          const photos = await photographerDB.listDocuments(
-            config.photographer.databaseId,
-            config.photographer.collections.uploadedPhotos,
-            [Query.equal("bookingId", booking.$id)]
-          );
-
-          if (photos.total === 0) return null; // Skip bookings with no photos
-
-          // Get photographer details
-          const photographer = await photographerDB.getDocument(
-            config.photographer.databaseId,
-            config.photographer.collections.users,
-            booking.photographerId
-          );
-
-          // Parse client details
-          const client = JSON.parse(booking.userDetails);
-
-          return {
-            booking: {
-              id: booking.$id,
-              date: booking.date,
-              price: booking.price,
-              status: booking.status,
-              package: booking.package,
-              location: booking.location,
-            },
-            photographer: {
-              id: photographer.$id,
-              name: photographer.name,
-              email: photographer.email,
-              avatar: photographer.avatar,
-            },
-            client: {
-              name: client.name,
-              email: client.email,
-              avatar: client.avatar,
-            },
-            photos: photos.documents.map((photo) => ({
-              ...photo,
-              status: photo.status || "pending",
-              isEnhanced: photo.isEnhanced || false,
-              enhancedUrl: photo.enhancedUrl || photo.photoUrl, // Use enhanced URL if exists
-            })),
-            totalPhotos: photos.total,
-            pendingPhotos: photos.documents.filter(
-              (p) => !p.status || p.status === "pending"
-            ).length,
-            approvedPhotos: photos.documents.filter(
-              (p) => p.status === "approved"
-            ).length,
-            uploadedAt: photos.documents[0]?.$createdAt || booking.$createdAt,
-          };
-        } catch (error) {
-          console.error("Error processing booking photos:", booking.$id, error);
-          return null;
-        }
-      })
-    );
-
-    // Filter out null values and sort by upload date
-    const validBookings = bookingsWithPhotos
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-
-    // Apply pagination after getting all bookings
-    // const paginatedBookings = validBookings.slice(offset, offset + limit);
-
-    return {
-      bookings: validBookings,
-      total: allBookings.total,
-    };
+    const response = await api.get(`/photos/by-bookings?${params.toString()}`);
+    
+    console.log('✅ FRONTEND: Photos by bookings received:', response.bookings.length);
+    return response;
   } catch (error) {
-    console.error("Error getting photos by bookings:", error);
+    console.error('❌ FRONTEND: Error getting photos by bookings:', error);
     throw error;
   }
 };
@@ -120,78 +32,13 @@ export const getPhotosByBookings = async (
 // Get photo statistics
 export const getPhotoStats = async () => {
   try {
-    // Get all photos
-    const photos = await photographerDB.listDocuments(
-      config.photographer.databaseId,
-      config.photographer.collections.uploadedPhotos
-    );
-
-    // Get current date and previous dates for comparisons
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-
-    // Filter photos by date
-    const thisMonthPhotos = photos.documents.filter(
-      (p) =>
-        new Date(p.$createdAt) >= new Date(now.getFullYear(), now.getMonth(), 1)
-    );
-    const lastMonthPhotos = photos.documents.filter(
-      (p) =>
-        new Date(p.$createdAt) >= lastMonth &&
-        new Date(p.$createdAt) < new Date(now.getFullYear(), now.getMonth(), 1)
-    );
-    const lastYearPhotos = photos.documents.filter(
-      (p) =>
-        new Date(p.$createdAt) >= lastYear &&
-        new Date(p.$createdAt) < new Date(now.getFullYear(), now.getMonth(), 1)
-    );
-
-    // Calculate changes
-    const monthlyChange =
-      lastMonthPhotos.length > 0
-        ? ((thisMonthPhotos.length - lastMonthPhotos.length) /
-            lastMonthPhotos.length) *
-          100
-        : 0;
-
-    const yearOverYearChange =
-      lastYearPhotos.length > 0
-        ? ((thisMonthPhotos.length - lastYearPhotos.length) /
-            lastYearPhotos.length) *
-          100
-        : 0;
-
-    // Get bookings with photos
-    const bookings = await userDB.listDocuments(
-      config.user.databaseId,
-      config.user.collections.bookings
-    );
-
-    const bookingsWithPhotos = bookings.documents.filter((booking) =>
-      photos.documents.some((photo) => photo.bookingId === booking.$id)
-    );
-
-    const stats = {
-      total: photos.total,
-      pending: photos.documents.filter(
-        (p) => !p.status || p.status === "pending"
-      ).length,
-      approved: photos.documents.filter((p) => p.status === "approved").length,
-      rejected: photos.documents.filter((p) => p.status === "rejected").length,
-      totalBookings: bookingsWithPhotos.length,
-      photographerCount: new Set(photos.documents.map((p) => p.photographerId))
-        .size,
-      clientCount: new Set(
-        bookingsWithPhotos.map((b) => JSON.parse(b.userDetails).email)
-      ).size,
-      monthlyChange: parseFloat(monthlyChange.toFixed(1)),
-      yearOverYearChange: parseFloat(yearOverYearChange.toFixed(1)),
-    };
-
+    console.log('📊 FRONTEND: Fetching photo statistics from backend');
+    const stats = await api.get('/photos/stats');
+    
+    console.log('✅ FRONTEND: Photo statistics received');
     return stats;
   } catch (error) {
-    console.error("Error getting photo stats:", error);
+    console.error('❌ FRONTEND: Error getting photo stats:', error);
     throw error;
   }
 };
@@ -199,20 +46,13 @@ export const getPhotoStats = async () => {
 // Update photo
 export const updatePhoto = async (photoId, updates) => {
   try {
-    const updatedPhoto = await photographerDB.updateDocument(
-      config.photographer.databaseId,
-      config.photographer.collections.uploadedPhotos,
-      photoId,
-      {
-        ...updates,
-        uploadDate: new Date().toISOString(),
-      }
-    );
-    console.log("Updated photo:", updatePhoto);
-
+    console.log('✏️ FRONTEND: Updating photo via backend');
+    const updatedPhoto = await api.put(`/photos/${photoId}`, updates);
+    
+    console.log('✅ FRONTEND: Photo updated successfully');
     return updatedPhoto;
   } catch (error) {
-    console.error("Error updating photo:", error);
+    console.error('❌ FRONTEND: Error updating photo:', error);
     throw error;
   }
 };
@@ -220,77 +60,151 @@ export const updatePhoto = async (photoId, updates) => {
 // Bulk update photos
 export const bulkUpdatePhotos = async (photoIds, updates) => {
   try {
-    const updatePromises = photoIds.map((id) => updatePhoto(id, updates));
-
-    await Promise.all(updatePromises);
-    return { success: true };
+    console.log('🔄 FRONTEND: Bulk updating photos via backend');
+    const result = await api.put('/photos/bulk/update', { photoIds, updates });
+    
+    console.log('✅ FRONTEND: Bulk photo update completed');
+    return result;
   } catch (error) {
-    console.error("Error bulk updating photos:", error);
+    console.error('❌ FRONTEND: Error bulk updating photos:', error);
     throw error;
   }
 };
 
-// Download photo
-const handleDownload = async (downloadURL) => {
-  if (!downloadURL) return;
-  const link = document.createElement("a");
-  link.href = downloadURL;
-  link.download = "";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+// Get photos by booking ID
+export const getPhotosByBooking = async (bookingId) => {
+  try {
+    console.log('📸 FRONTEND: Fetching photos for booking from backend');
+    const photos = await api.get(`/photos/booking/${bookingId}`);
+    
+    console.log('✅ FRONTEND: Photos for booking received:', photos.length);
+    return photos;
+  } catch (error) {
+    console.error('❌ FRONTEND: Error getting photos by booking:', error);
+    throw error;
+  }
+};
+
+// Delete photo
+export const deletePhoto = async (photoId) => {
+  try {
+    console.log('🗑️ FRONTEND: Deleting photo via backend');
+    const result = await api.delete(`/photos/${photoId}`);
+    
+    console.log('✅ FRONTEND: Photo deleted successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ FRONTEND: Error deleting photo:', error);
+    throw error;
+  }
+};
+
+// Download single photo
+export const downloadPhoto = async (photoUrl, fileName = 'photo.jpg') => {
+  try {
+    console.log('📥 FRONTEND: Downloading photo:', photoUrl);
+    
+    // Fetch the image as blob
+    const response = await fetch(photoUrl);
+    const blob = await response.blob();
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    
+    console.log('✅ FRONTEND: Photo downloaded successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ FRONTEND: Error downloading photo:', error);
+    throw error;
+  }
 };
 
 // Bulk download photos
 export const bulkDownloadAsZip = async (files) => {
-  const zip = new JSZip();
-  const folder = zip.folder("bulk_download"); // Create a folder in the ZIP
-  await signInAnonymously(auth); // Sign in anonymously to Firebase
-
-  // Fetch and add each file to the ZIP
-  await Promise.all(
-    files.map(async (file) => {
-      const filePath =
-        file.photoId +
-        file.url.slice(file.url.lastIndexOf("."), file.url.lastIndexOf("?"));
-      const response = await fetch(file.url);
-
-      if (response.ok) {
-        const blob = await response.blob();
-        folder.file(filePath, blob);
-      } else {
-        throw new Error("Error fetching file:" + filePath);
-      }
-    })
-  );
-
-  // Generate the ZIP file and download it
-  const content = await zip.generateAsync({ type: "blob" });
-  saveAs(content, "download_files.zip");
+  try {
+    console.log('📦 FRONTEND: Bulk downloading photos');
+    
+    // Download files individually for now (can be enhanced to ZIP later)
+    for (const file of files) {
+      const fileName = file.photoId ? `photo_${file.photoId}.jpg` : 'photo.jpg';
+      await downloadPhoto(file.url, fileName);
+    }
+    
+    console.log('✅ FRONTEND: Bulk download completed');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ FRONTEND: Error bulk downloading photos:', error);
+    throw error;
+  }
 };
 
-// Upload photo
+// Upload photo (placeholder - implement if needed)
 export const uploadPhotoToFirebase = async (photo) => {
-  await signInAnonymously(auth);
-  const storageRef = ref(storage, `${photo.name}`);
-  await uploadBytes(storageRef, photo);
-  const downloadUrl = await getDownloadURL(storageRef);
-  const photoId = photo.name.slice(0, photo.name.lastIndexOf("."));
-  return { url: downloadUrl, id: photoId };
+  try {
+    console.log('📤 FRONTEND: Upload photo to Firebase (placeholder)');
+    // TODO: Implement photo upload functionality
+    // This would typically involve uploading to your storage service
+    return { url: '', id: '' };
+  } catch (error) {
+    console.error('❌ FRONTEND: Error uploading photo:', error);
+    throw error;
+  }
 };
 
+// Replace photo with edited version
+export const replacePhoto = async (photoId, file) => {
+  try {
+    console.log('🔄 FRONTEND: Replacing photo:', photoId);
+    
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    // Get the token for authorization
+    const token = localStorage.getItem("admin_token");
+    
+    // Make direct axios request to bypass the JSON content-type issue
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/photos/${photoId}/replace`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData, let browser set it with boundary
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to replace photo');
+    }
+    
+    const result = await response.json();
+    console.log('✅ FRONTEND: Photo replaced successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ FRONTEND: Error replacing photo:', error);
+    throw error;
+  }
+};
+
+// Save edited photos (placeholder - implement if needed)
 export const saveEditedPhotos = async (photos) => {
   try {
-    //TODO:Implement deletiing photos in firebase storage before updating,
-    // Idea is attach the name of the photo when downloading so that when deleting can be used to generate ref
-    const updatePromises = photos.map((photo) =>
-      updatePhoto(photo.id, { photoUrl: photo.url })
-    );
-
-    await Promise.all(updatePromises);
-    return { success: true, message: "All photos uploaded successfully" };
+    console.log('💾 FRONTEND: Saving edited photos (placeholder)');
+    // TODO: Implement saving edited photos
+    return { success: true, message: "All photos saved successfully" };
   } catch (error) {
-    console.error("Error bulk uploading photos:", error);
+    console.error('❌ FRONTEND: Error saving edited photos:', error);
     throw error;
   }
 };

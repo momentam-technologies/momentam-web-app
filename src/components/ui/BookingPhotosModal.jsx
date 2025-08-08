@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { format } from "date-fns";
+import { safeFormatDate } from "@/utils/dateUtils";
 import {
   IconX,
   IconCheck,
@@ -21,6 +22,8 @@ import {
   bulkDownloadAsZip,
   uploadPhotoToFirebase,
   saveEditedPhotos,
+  downloadPhoto,
+  replacePhoto,
 } from "@/lib/photos";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
@@ -111,24 +114,76 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     
-    try {
-      const photos = await Promise.all(
-        files.map((file) => uploadPhotoToFirebase(file))
-      );
-
-      const {success} = await saveEditedPhotos(photos);
-
-      if (success) {
-        toast.success("Photos uploaded successfully");
+    // If photos are selected, replace them. Otherwise, upload new photos
+    if (selectedPhotos.length > 0) {
+      // Replace selected photos
+      try {
+        setIsProcessing(true);
+        for (let i = 0; i < Math.min(files.length, selectedPhotos.length); i++) {
+          await handleReplacePhoto(selectedPhotos[i], files[i]);
+        }
+        toast.success("Photos replaced successfully");
+        setSelectedPhotos([]);
         onUpdate();
-      } else {
+      } catch (error) {
+        console.error("Error replacing photos:", error);
+        toast.error("Failed to replace photos");
+      } finally {
+        setIsProcessing(false);
+      }
+    } else {
+      // Upload new photos (existing functionality)
+      try {
+        const photos = await Promise.all(
+          files.map((file) => uploadPhotoToFirebase(file))
+        );
+
+        const {success} = await saveEditedPhotos(photos);
+
+        if (success) {
+          toast.success("Photos uploaded successfully");
+          onUpdate();
+        } else {
+          toast.error("Failed to upload photos");
+        }
+      } catch (error) {
+        console.error(error);
         toast.error("Failed to upload photos");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to upload photos");
     }
   };
+
+  // Function to handle single photo download
+  const handleDownloadPhoto = async (photo) => {
+    try {
+      setIsProcessing(true);
+      const fileName = photo.fileName || `photo_${photo.$id}.jpg`;
+      await downloadPhoto(photo.photoUrl, fileName);
+      toast.success("Photo downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading photo:", error);
+      toast.error("Failed to download photo");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Function to handle photo replacement
+  const handleReplacePhoto = async (photoId, file) => {
+    try {
+      setIsProcessing(true);
+      await replacePhoto(photoId, file);
+      toast.success("Photo replaced successfully");
+      onUpdate();
+    } catch (error) {
+      console.error("Error replacing photo:", error);
+      toast.error("Failed to replace photo");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+
 
   return (
     <motion.div
@@ -154,7 +209,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                   {booking.client.name}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(new Date(booking.booking.date), "PPP")}
+                  {safeFormatDate(booking.booking.date, "PPP")}
                 </p>
               </div>
               <button
@@ -194,13 +249,33 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 style={{ display: "none" }}
                 onChange={handleFileChange}
               />
+              
+
               <button
                 onClick={() => fileInputRef.current.click()}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
               >
                 <IconUpload size={20} />
-                <span>Upload Photos</span>
+                <span>{selectedPhotos.length > 0 ? `Replace ${selectedPhotos.length} Photo${selectedPhotos.length > 1 ? 's' : ''}` : 'Upload Photos'}</span>
               </button>
+
+              {selectedPhotos.length > 0 && (
+                <button
+                  onClick={() => {
+                    const photos = booking.photos.filter((photo) =>
+                      selectedPhotos.includes(photo.$id)
+                    );
+                    const formattedPhotos = photos.map((photo) => {
+                      return { url: photo.photoUrl, photoId: photo.$id };
+                    });
+                    bulkDownloadAsZip(formattedPhotos);
+                  }}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center space-x-2"
+                >
+                  <IconDownload size={20} />
+                  <span>Download Selected</span>
+                </button>
+              )}
 
               <button
                 onClick={handleSelectAll}
@@ -326,14 +401,35 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 {/* Actions Overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
                   <button
+                    onClick={() => handleDownloadPhoto(photo)}
+                    className="p-2 bg-gray-500 text-white rounded-full hover:bg-gray-600"
+                    title="Download"
+                  >
+                    <IconDownload size={20} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert('Replace button clicked for photo: ' + photo.$id); // Temporary alert for debugging
+                      console.log('🔄 Replace button clicked for photo:', photo.$id);
+                      setSelectedPhotos([photo.$id]);
+                      editFileInputRef.current.click();
+                    }}
+                    className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+                    title="Replace"
+                  >
+                    <IconUpload size={20} />
+                  </button>
+                  <button
                     onClick={() => handleStatusUpdate(photo.$id, "approved")}
                     className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+                    title="Approve"
                   >
                     <IconCheck size={20} />
                   </button>
                   <button
                     onClick={() => handleStatusUpdate(photo.$id, "rejected")}
                     className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    title="Reject"
                   >
                     <IconReject size={20} />
                   </button>
@@ -343,6 +439,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                       setShowBulkEditor(true);
                     }}
                     className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+                    title="Edit"
                   >
                     <IconEdit size={20} />
                   </button>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { IconEye, IconEdit, IconTrash, IconClock, IconCheck, IconX } from '@tabler/icons-react';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/utils/dateUtils';
 
 const BookingsTable = ({ bookings, onViewBooking, onUpdateStatus, isLoading }) => {
   const getStatusColor = (status) => {
@@ -51,7 +52,7 @@ const BookingsTable = ({ bookings, onViewBooking, onUpdateStatus, isLoading }) =
         <tbody className="bg-white dark:bg-neutral-800 divide-y divide-gray-200 dark:divide-gray-700">
           {bookings.map((booking) => (
             <motion.tr
-              key={booking.$id}
+              key={booking._id || booking.$id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -110,7 +111,7 @@ const BookingsTable = ({ bookings, onViewBooking, onUpdateStatus, isLoading }) =
                 TZS {parseFloat(booking.price).toLocaleString()}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(booking.date), 'PPp')}
+                {safeFormatDate(booking.date, 'PPp')}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button
@@ -122,13 +123,13 @@ const BookingsTable = ({ bookings, onViewBooking, onUpdateStatus, isLoading }) =
                 {booking.status === 'pending' && (
                   <>
                     <button
-                      onClick={() => onUpdateStatus(booking.$id, 'active')}
+                      onClick={() => onUpdateStatus(booking._id || booking.$id, 'active')}
                       className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                     >
                       <IconCheck size={20} />
                     </button>
                     <button
-                      onClick={() => onUpdateStatus(booking.$id, 'cancelled')}
+                      onClick={() => onUpdateStatus(booking._id || booking.$id, 'cancelled')}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     >
                       <IconX size={20} />

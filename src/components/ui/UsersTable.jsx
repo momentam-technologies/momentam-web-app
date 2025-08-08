@@ -8,6 +8,7 @@ import {
   IconBookmark,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
+import { safeFormatDate } from "@/utils/dateUtils";
 
 const UsersTable = ({
   users,
@@ -63,7 +64,7 @@ const UsersTable = ({
         <tbody className="bg-white dark:bg-neutral-800 divide-y divide-gray-200 dark:divide-gray-700">
           {users.map((user) => (
             <motion.tr
-              key={user.$id}
+              key={user._id || user.$id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -73,8 +74,8 @@ const UsersTable = ({
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedUsers.includes(user.$id)}
-                  onChange={() => onSelectUser(user.$id)}
+                  checked={selectedUsers.includes(user._id || user.$id)}
+                  onChange={() => onSelectUser(user._id || user.$id)}
                 />
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -106,7 +107,7 @@ const UsersTable = ({
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(user.lastLogin || user.$updatedAt), "PPp")}
+                {user.lastBooking ? safeFormatDate(user.lastBooking, "PPp") : "No bookings"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button

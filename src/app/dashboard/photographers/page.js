@@ -165,7 +165,7 @@ const PhotographersPage = () => {
           setSelectedPhotographers((prev) =>
             prev.length === photographers.length
               ? []
-              : photographers.map((p) => p.$id)
+              : photographers.map((p) => p._id || p.$id)
           );
         }}
         isLoading={isLoading}
@@ -236,7 +236,7 @@ const PhotographersPage = () => {
             photographer={editingPhotographer}
             onUpdatePhotographer={async (data) => {
               try {
-                await updatePhotographer(editingPhotographer.$id, data);
+                await updatePhotographer(editingPhotographer._id || editingPhotographer.$id, data);
                 toast.success("Photographer updated successfully");
                 fetchPhotographers();
                 setEditingPhotographer(null);
@@ -253,7 +253,7 @@ const PhotographersPage = () => {
             onClose={() => setPhotographerToDelete(null)}
             onConfirm={async () => {
               try {
-                await deletePhotographer(photographerToDelete.$id);
+                await deletePhotographer(photographerToDelete._id || photographerToDelete.$id);
                 toast.success("Photographer deleted successfully");
                 fetchPhotographers();
                 setPhotographerToDelete(null);

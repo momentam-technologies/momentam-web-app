@@ -1,32 +1,15 @@
-import { userDB, config } from './appwrite-config';
-import { Query } from 'appwrite';
+import { api } from './api';
 
 // Fetch total revenue, profit, and other financial metrics
 export const getFinancialMetrics = async () => {
   try {
-    // Fetch completed bookings
-    const bookings = await userDB.listDocuments(
-      config.user.databaseId,
-      config.user.collections.bookings,
-      [Query.equal('status', 'completed')]
-    );
-
-    console.log('Completed bookings:', bookings.documents);
-
-    const totalRevenue = bookings.documents.reduce((sum, booking) => sum + parseFloat(booking.price || 0), 0);
-    const totalProfit = totalRevenue * 0.8; // Assuming 20% platform fee
-    const pendingPayouts = totalRevenue * 0.2; // Assuming payouts are pending for the platform fee
-
-    return {
-      totalRevenue,
-      totalProfit,
-      pendingPayouts,
-      dailyRevenue: totalRevenue / 30, // Simplified daily revenue calculation
-      monthlyGrowth: 10, // Placeholder for monthly growth calculation
-      losses: 0 // Placeholder for losses calculation
-    };
+    console.log('💰 FRONTEND: Fetching financial metrics from backend');
+    const metrics = await api.get('/finances/metrics');
+    
+    console.log('✅ FRONTEND: Financial metrics received');
+    return metrics;
   } catch (error) {
-    console.error('Error fetching financial metrics:', error);
+    console.error('❌ FRONTEND: Error fetching financial metrics:', error);
     throw error;
   }
 };
@@ -34,24 +17,13 @@ export const getFinancialMetrics = async () => {
 // Fetch recent transactions
 export const getRecentTransactions = async () => {
   try {
-    // Fetch completed bookings
-    const bookings = await userDB.listDocuments(
-      config.user.databaseId,
-      config.user.collections.bookings,
-      [Query.equal('status', 'completed'), Query.orderDesc('$createdAt'), Query.limit(5)]
-    );
-
-    console.log('Recent transactions:', bookings.documents);
-
-    return bookings.documents.map(booking => ({
-      id: booking.$id,
-      type: 'incoming',
-      amount: parseFloat(booking.price || 0),
-      description: `Booking payment from ${booking.userDetails.name}`,
-      date: booking.$createdAt
-    }));
+    console.log('💳 FRONTEND: Fetching recent transactions from backend');
+    const transactions = await api.get('/finances/transactions');
+    
+    console.log('✅ FRONTEND: Recent transactions received');
+    return transactions;
   } catch (error) {
-    console.error('Error fetching recent transactions:', error);
+    console.error('❌ FRONTEND: Error fetching recent transactions:', error);
     throw error;
   }
 };
@@ -59,12 +31,41 @@ export const getRecentTransactions = async () => {
 // Fetch payment methods distribution
 export const getPaymentMethods = async () => {
   try {
-    // Simulate fetching payment methods from gallery or other relevant data
-    const response = await axios.get('/api/payment-methods');
-    console.log('Payment methods:', response.data);
-    return response.data;
+    console.log('💳 FRONTEND: Fetching payment methods from backend');
+    const paymentMethods = await api.get('/finances/payment-methods');
+    
+    console.log('✅ FRONTEND: Payment methods received');
+    return paymentMethods;
   } catch (error) {
-    console.error('Error fetching payment methods:', error);
+    console.error('❌ FRONTEND: Error fetching payment methods:', error);
+    throw error;
+  }
+};
+
+// Fetch revenue trends
+export const getRevenueTrends = async (period = 'monthly') => {
+  try {
+    console.log('📈 FRONTEND: Fetching revenue trends from backend');
+    const trends = await api.get(`/finances/trends?period=${period}`);
+    
+    console.log('✅ FRONTEND: Revenue trends received');
+    return trends;
+  } catch (error) {
+    console.error('❌ FRONTEND: Error fetching revenue trends:', error);
+    throw error;
+  }
+};
+
+// Fetch payout summary
+export const getPayoutSummary = async () => {
+  try {
+    console.log('💸 FRONTEND: Fetching payout summary from backend');
+    const payoutSummary = await api.get('/finances/payouts');
+    
+    console.log('✅ FRONTEND: Payout summary received');
+    return payoutSummary;
+  } catch (error) {
+    console.error('❌ FRONTEND: Error fetching payout summary:', error);
     throw error;
   }
 };

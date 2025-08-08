@@ -11,6 +11,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
+import { safeFormatDate } from "@/utils/dateUtils";
 
 const PhotographersTable = ({
   photographers,
@@ -74,7 +75,7 @@ const PhotographersTable = ({
         <tbody className="bg-white dark:bg-neutral-800 divide-y divide-gray-200 dark:divide-gray-700">
           {photographers.map((photographer) => (
             <motion.tr
-              key={photographer.$id}
+              key={photographer._id || photographer.$id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -84,8 +85,8 @@ const PhotographersTable = ({
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedPhotographers.includes(photographer.$id)}
-                  onChange={() => onSelectPhotographer(photographer.$id)}
+                  checked={selectedPhotographers.includes(photographer._id || photographer.$id)}
+                  onChange={() => onSelectPhotographer(photographer._id || photographer.$id)}
                 />
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -146,10 +147,10 @@ const PhotographersTable = ({
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {format(
-                  new Date(photographer.lastLogin || photographer.$updatedAt),
-                  "PPp"
-                )}
+                {photographer.lastOfflineTimestamp || photographer.$updatedAt 
+                  ? safeFormatDate(photographer.lastOfflineTimestamp || photographer.$updatedAt, "PPp")
+                  : "Never"
+                }
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button

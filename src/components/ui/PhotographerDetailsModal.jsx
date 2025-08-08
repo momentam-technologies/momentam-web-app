@@ -151,7 +151,7 @@ const PhotographerDetailsModal = ({ photographer, onClose }) => {
         <div className="p-6 bg-gray-50 dark:bg-neutral-700/50 border-t border-gray-200 dark:border-neutral-700">
           <div className="flex justify-end space-x-4">
             <button
-              onClick={fetchPhotographerDetails}
+              onClick={() => {}}
               className="flex items-center space-x-2 text-blue-500 hover:text-blue-600"
             >
               <IconRefresh size={16} />

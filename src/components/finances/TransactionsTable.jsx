@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/utils/dateUtils';
 
 const TransactionsTable = ({ transactions }) => {
   return (
@@ -17,7 +18,7 @@ const TransactionsTable = ({ transactions }) => {
         <tbody className="bg-white dark:bg-neutral-800 divide-y divide-gray-200 dark:divide-gray-700">
           {transactions.map((transaction) => (
             <tr key={transaction.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{format(new Date(transaction.date), 'MMM dd, yyyy')}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{safeFormatDate(transaction.date, 'MMM dd, yyyy')}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{transaction.description}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">TZS {transaction.amount.toLocaleString()}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{transaction.type}</td>

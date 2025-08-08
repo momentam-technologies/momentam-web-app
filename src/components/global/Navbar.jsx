@@ -29,7 +29,7 @@ const Navbar = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsMessageDropdownOpen(false);
-        setIsProfileOpen(false);
+        // setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -47,8 +47,8 @@ const Navbar = () => {
     { id: 3, sender: 'Mike Johnson', message: 'Thanks for your quick response!', time: '3 days ago' },
   ];
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     router.push('/login');
   };
 

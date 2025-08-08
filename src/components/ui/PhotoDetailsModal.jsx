@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/utils/dateUtils';
 import { IconX, IconCheck, IconX as IconReject, IconDownload, IconUser, IconCalendar, IconPhoto } from '@tabler/icons-react';
 
 const PhotoDetailsModal = ({ photo, onClose, onStatusChange }) => {
@@ -106,7 +107,7 @@ const PhotoDetailsModal = ({ photo, onClose, onStatusChange }) => {
                 <div className="space-y-2">
                   <p className="text-sm">{photo.booking?.package}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {format(new Date(photo.booking?.date), 'PPP')}
+                    {safeFormatDate(photo.booking?.date, 'PPP')}
                   </p>
                 </div>
               </div>
@@ -115,12 +116,12 @@ const PhotoDetailsModal = ({ photo, onClose, onStatusChange }) => {
               <div>
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Upload Info</h4>
                 <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                  <p>Uploaded: {format(new Date(photo.$createdAt), 'PPp')}</p>
+                  <p>Uploaded: {safeFormatDate(photo.$createdAt, 'PPp')}</p>
                   {photo.status === 'approved' && photo.approvedAt && (
-                    <p>Approved: {format(new Date(photo.approvedAt), 'PPp')}</p>
+                    <p>Approved: {safeFormatDate(photo.approvedAt, 'PPp')}</p>
                   )}
                   {photo.status === 'rejected' && photo.rejectedAt && (
-                    <p>Rejected: {format(new Date(photo.rejectedAt), 'PPp')}</p>
+                    <p>Rejected: {safeFormatDate(photo.rejectedAt, 'PPp')}</p>
                   )}
                 </div>
               </div>

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconSearch, IconFilter, IconCalendar, IconRefresh, IconDownload, 
          IconChartBar, IconCurrencyDollar, IconUsers, IconClock, IconCalendarStats, IconChevronDown } from '@tabler/icons-react';
-import { getBookings, getBookingStats, getBookingTrends } from '@/lib/bookings';
+import { getBookings, getBookingStats, getBookingTrends, updateBookingStatus } from '@/lib/bookings';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -111,7 +111,7 @@ const BookingsPage = () => {
       // Filter by selected months if any
       if (selectedMonths.length > 0) {
         exportData = exportData.filter(booking => 
-          selectedMonths.includes(booking.$createdAt.slice(0, 7))
+          selectedMonths.includes((booking.$createdAt || booking.createdAt).slice(0, 7))
         );
       }
       // Filter by period
@@ -136,7 +136,7 @@ const BookingsPage = () => {
         }
 
         exportData = exportData.filter(booking => {
-          const bookingDate = new Date(booking.$createdAt);
+          const bookingDate = new Date(booking.$createdAt || booking.createdAt);
           return bookingDate >= startDate && bookingDate <= today;
         });
       }

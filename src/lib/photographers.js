@@ -1,69 +1,26 @@
-import { photographerDB, userDB, config } from './appwrite-config';
-import { Query, ID } from 'appwrite';
+import { api } from './api';
 
 // Get all photographers with pagination and filters
 export const getPhotographers = async (limit = 10, offset = 0, filters = {}) => {
     try {
-        let queries = [Query.limit(limit), Query.offset(offset)];
-
-        // Add filters if they exist
-        if (filters.status) {
-            queries.push(Query.equal('status', filters.status));
-        }
-        if (filters.search) {
-            queries.push(Query.search('name', filters.search));
-        }
-        if (filters.dateRange) {
-            queries.push(Query.greaterThan('$createdAt', filters.dateRange.start));
-            queries.push(Query.lessThan('$createdAt', filters.dateRange.end));
-        }
-
-        const photographers = await photographerDB.listDocuments(
-            config.photographer.databaseId,
-            config.photographer.collections.users,
-            queries
-        );
-
-        // Get bookings for all photographers
-        const bookings = await userDB.listDocuments(
-            config.user.databaseId,
-            config.user.collections.bookings
-        );
-
-        // Enhance photographer data with additional information
-        const enhancedPhotographers = photographers.documents.map(photographer => {
-            // Get photographer's bookings
-            const photographerBookings = bookings.documents.filter(b => b.photographerId === photographer.$id);
-            const completedBookings = photographerBookings.filter(b => b.status === 'completed');
-            
-            // Calculate earnings
-            const totalEarnings = completedBookings.reduce((sum, booking) => {
-                return sum + parseFloat(booking.price || 0);
-            }, 0);
-
-            // Calculate rating
-            const ratings = completedBookings.map(b => b.rating || 0);
-            const averageRating = ratings.length > 0 
-                ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
-                : 0;
-
-            return {
-                ...photographer,
-                totalBookings: photographerBookings.length,
-                completedBookings: completedBookings.length,
-                pendingBookings: photographerBookings.filter(b => b.status === 'pending').length,
-                totalEarnings,
-                rating: averageRating,
-                lastBooking: photographerBookings[0]?.$createdAt || null
-            };
+        console.log('📸 FRONTEND: Fetching photographers from backend');
+        
+        const params = new URLSearchParams({
+            limit: limit.toString(),
+            offset: offset.toString()
         });
 
-        return {
-            photographers: enhancedPhotographers,
-            total: photographers.total
-        };
+        // Add filters to params
+        if (filters.status) params.append('status', filters.status);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.dateRange) params.append('dateRange', JSON.stringify(filters.dateRange));
+
+        const response = await api.get(`/photographers?${params.toString()}`);
+        
+        console.log('✅ FRONTEND: Photographers received:', response.photographers.length);
+        return response;
     } catch (error) {
-        console.error('Error getting photographers:', error);
+        console.error('❌ FRONTEND: Error getting photographers:', error);
         throw error;
     }
 };
@@ -71,51 +28,27 @@ export const getPhotographers = async (limit = 10, offset = 0, filters = {}) => 
 // Get detailed photographer information
 export const getPhotographerDetails = async (photographerId) => {
     try {
-        const [photographer, bookings, uploadedPhotos] = await Promise.all([
-            photographerDB.getDocument(
-                config.photographer.databaseId,
-                config.photographer.collections.users,
-                photographerId
-            ),
-            userDB.listDocuments(
-                config.user.databaseId,
-                config.user.collections.bookings,
-                [Query.equal('photographerId', photographerId)]
-            ),
-            photographerDB.listDocuments(
-                config.photographer.databaseId,
-                config.photographer.collections.uploadedPhotos,
-                [Query.equal('accountId', photographerId)]
-            )
-        ]);
-
-        // Calculate statistics
-        const completedBookings = bookings.documents.filter(b => b.status === 'completed');
-        const totalEarnings = completedBookings.reduce((sum, booking) => {
-            return sum + parseFloat(booking.price || 0);
-        }, 0);
-
-        // Calculate rating
-        const ratings = completedBookings.map(b => b.rating || 0);
-        const averageRating = ratings.length > 0 
-            ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
-            : 0;
-
-        return {
-            ...photographer,
-            bookings: bookings.documents,
-            uploadedPhotos: uploadedPhotos.documents,
-            stats: {
-                totalBookings: bookings.total,
-                completedBookings: completedBookings.length,
-                pendingBookings: bookings.documents.filter(b => b.status === 'pending').length,
-                totalPhotos: uploadedPhotos.total,
-                totalEarnings,
-                rating: averageRating
-            }
-        };
+        console.log('📸 FRONTEND: Fetching photographer details from backend');
+        const photographerDetails = await api.get(`/photographers/${photographerId}`);
+        
+        console.log('✅ FRONTEND: Photographer details received');
+        return photographerDetails;
     } catch (error) {
-        console.error('Error getting photographer details:', error);
+        console.error('❌ FRONTEND: Error getting photographer details:', error);
+        throw error;
+    }
+};
+
+// Create new photographer
+export const createPhotographer = async (photographerData) => {
+    try {
+        console.log('➕ FRONTEND: Creating photographer via backend');
+        const photographer = await api.post('/photographers', photographerData);
+        
+        console.log('✅ FRONTEND: Photographer created successfully');
+        return photographer;
+    } catch (error) {
+        console.error('❌ FRONTEND: Error creating photographer:', error);
         throw error;
     }
 };
@@ -123,23 +56,13 @@ export const getPhotographerDetails = async (photographerId) => {
 // Update photographer
 export const updatePhotographer = async (photographerId, photographerData) => {
     try {
-        const updatedPhotographer = await photographerDB.updateDocument(
-            config.photographer.databaseId,
-            config.photographer.collections.users,
-            photographerId,
-            {
-                name: photographerData.name,
-                email: photographerData.email,
-                phone: photographerData.phone || '',
-                avatar: photographerData.avatar || '',
-                bio: photographerData.bio || '',
-                location: photographerData.location || ''
-            }
-        );
-
+        console.log('✏️ FRONTEND: Updating photographer via backend');
+        const updatedPhotographer = await api.put(`/photographers/${photographerId}`, photographerData);
+        
+        console.log('✅ FRONTEND: Photographer updated successfully');
         return updatedPhotographer;
     } catch (error) {
-        console.error('Error updating photographer:', error);
+        console.error('❌ FRONTEND: Error updating photographer:', error);
         throw error;
     }
 };
@@ -147,46 +70,13 @@ export const updatePhotographer = async (photographerId, photographerData) => {
 // Delete photographer
 export const deletePhotographer = async (photographerId) => {
     try {
-        // Delete photographer's live status
-        const liveStatus = await photographerDB.listDocuments(
-            config.photographer.databaseId,
-            config.photographer.collections.livePhotographers,
-            [Query.equal('accountId', photographerId)]
-        );
-
-        await Promise.all(liveStatus.documents.map(status => 
-            photographerDB.deleteDocument(
-                config.photographer.databaseId,
-                config.photographer.collections.livePhotographers,
-                status.$id
-            )
-        ));
-
-        // Delete photographer's uploaded photos
-        const uploadedPhotos = await photographerDB.listDocuments(
-            config.photographer.databaseId,
-            config.photographer.collections.uploadedPhotos,
-            [Query.equal('accountId', photographerId)]
-        );
-
-        await Promise.all(uploadedPhotos.documents.map(photo => 
-            photographerDB.deleteDocument(
-                config.photographer.databaseId,
-                config.photographer.collections.uploadedPhotos,
-                photo.$id
-            )
-        ));
-
-        // Finally delete the photographer
-        await photographerDB.deleteDocument(
-            config.photographer.databaseId,
-            config.photographer.collections.users,
-            photographerId
-        );
-
-        return { success: true };
+        console.log('🗑️ FRONTEND: Deleting photographer via backend');
+        const result = await api.delete(`/photographers/${photographerId}`);
+        
+        console.log('✅ FRONTEND: Photographer deleted successfully');
+        return result;
     } catch (error) {
-        console.error('Error deleting photographer:', error);
+        console.error('❌ FRONTEND: Error deleting photographer:', error);
         throw error;
     }
 };
@@ -194,19 +84,27 @@ export const deletePhotographer = async (photographerId) => {
 // Verify photographer
 export const verifyPhotographer = async (photographerId) => {
     try {
-        const updatedPhotographer = await photographerDB.updateDocument(
-            config.photographer.databaseId,
-            config.photographer.collections.users,
-            photographerId,
-            {
-                verified: true,
-                verifiedAt: new Date().toISOString()
-            }
-        );
-
-        return updatedPhotographer;
+        console.log('✅ FRONTEND: Verifying photographer via backend');
+        const result = await api.patch(`/photographers/${photographerId}/verify`);
+        
+        console.log('✅ FRONTEND: Photographer verified successfully');
+        return result;
     } catch (error) {
-        console.error('Error verifying photographer:', error);
+        console.error('❌ FRONTEND: Error verifying photographer:', error);
+        throw error;
+    }
+};
+
+// Get photographer bookings
+export const getPhotographerBookings = async (photographerId) => {
+    try {
+        console.log('📋 FRONTEND: Fetching photographer bookings from backend');
+        const bookings = await api.get(`/photographers/${photographerId}/bookings`);
+        
+        console.log('✅ FRONTEND: Photographer bookings received:', bookings.length);
+        return bookings;
+    } catch (error) {
+        console.error('❌ FRONTEND: Error getting photographer bookings:', error);
         throw error;
     }
 };

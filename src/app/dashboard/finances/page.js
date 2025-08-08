@@ -8,7 +8,7 @@ import RevenueChart from '@/components/finances/RevenueChart';
 import PaymentMethodsChart from '@/components/finances/PaymentMethodsChart';
 import TransactionsTable from '@/components/finances/TransactionsTable';
 import PayoutManagement from '@/components/finances/PayoutManagement';
-import { getFinancialMetrics, getRecentTransactions, getPaymentMethods } from '@/lib/finances';
+import { getFinancialMetrics, getRecentTransactions, getPaymentMethods, getRevenueTrends } from '@/lib/finances';
 
 const FinancePage = () => {
   const [financialData, setFinancialData] = useState({
@@ -29,25 +29,17 @@ const FinancePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [metrics, transactions, methods] = await Promise.all([
+        const [metrics, transactions, methods, trends] = await Promise.all([
           getFinancialMetrics(),
           getRecentTransactions(),
-          getPaymentMethods()
+          getPaymentMethods(),
+          getRevenueTrends(selectedTimeRange)
         ]);
 
         setFinancialData(metrics);
         setRecentTransactions(transactions);
         setPaymentMethods(methods);
-
-        // Example revenue data for the chart
-        setRevenueData([
-          { name: 'Jan', revenue: 400000, profit: 240000, loss: 40000 },
-          { name: 'Feb', revenue: 300000, profit: 139800, loss: 20000 },
-          { name: 'Mar', revenue: 500000, profit: 300000, loss: 50000 },
-          { name: 'Apr', revenue: 450000, profit: 280000, loss: 45000 },
-          { name: 'May', revenue: 600000, profit: 380000, loss: 60000 },
-          { name: 'Jun', revenue: 550000, profit: 330000, loss: 55000 },
-        ]);
+        setRevenueData(trends);
       } catch (error) {
         console.error('Error fetching financial data:', error);
       } finally {

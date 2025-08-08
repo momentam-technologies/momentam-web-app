@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import Image from "next/image";
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/utils/dateUtils';
 import DashboardCard from '@/components/ui/DashboardCard';
 
 // Dynamically import components
@@ -197,7 +198,7 @@ const PhotosPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bookings.map((booking) => (
           <motion.div
-            key={booking.booking.id}
+            key={booking.booking.id || booking.booking._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
@@ -206,7 +207,7 @@ const PhotosPage = () => {
             {/* Preview Grid */}
             <div className="grid grid-cols-2 gap-1 aspect-video">
               {booking.photos.slice(0, 4).map((photo, index) => (
-                <div key={photo.$id} className="relative">
+                <div key={photo._id || photo.$id} className="relative">
                   <Image
                     src={photo.photoUrl}
                     alt={`Preview ${index + 1}`}
@@ -224,7 +225,7 @@ const PhotosPage = () => {
                   {booking.client.name}
                 </h3>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(new Date(booking.booking.date), "PP")}
+                  {safeFormatDate(booking.booking.date, "PP")}
                 </span>
               </div>
 

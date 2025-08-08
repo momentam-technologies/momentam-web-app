@@ -1,31 +1,36 @@
-import { Client, Account } from 'appwrite';
-
-const client = new Client()
-    .setEndpoint('https://cloud.appwrite.io/v1')
-    .setProject('671a8623003471deefdd');
-
-const account = new Account(client);
+import { authAPI } from './api';
 
 const logError = (functionName, error) => {
     console.error(`Error in ${functionName}:`, error);
     console.error('Error details:', JSON.stringify(error, null, 2));
 };
 
+export const signUpUser = async (email, password, name) => {
+    try {
+        // For admin portal, we'll use a different approach
+        // This could be used for creating additional admin users
+        console.log('Admin signup not implemented yet');
+        return { success: false, error: 'Admin signup not implemented' };
+    } catch (error) {
+        logError('signUpUser', error);
+        return { success: false, error: error.message };
+    }
+};
+
 export const loginUser = async (email, password) => {
     try {
-        // Attempt to create a session
-        const session = await account.createSession(email, password);
-        console.log('Session created:', session);
-
-        // Attempt to get user details
-        const user = await account.get();
-        console.log('User details:', user);
-
-        // Store the session and user info in localStorage
-        localStorage.setItem('appwrite_session', JSON.stringify(session));
-        localStorage.setItem('user', JSON.stringify(user));
-
-        return { success: true, user };
+        // Use our custom backend authentication
+        const response = await authAPI.login(email, password);
+        
+        if (response.success) {
+            // Store the token and user info in localStorage
+            localStorage.setItem('admin_token', response.token);
+            localStorage.setItem('admin_user', JSON.stringify(response.admin));
+            
+            return { success: true, user: response.admin };
+        } else {
+            return { success: false, error: response.error || 'Login failed' };
+        }
     } catch (error) {
         logError('loginUser', error);
         return { success: false, error: error.message };
@@ -34,9 +39,8 @@ export const loginUser = async (email, password) => {
 
 export const logoutUser = async () => {
     try {
-        await account.deleteSession('current');
-        localStorage.removeItem('appwrite_session');
-        localStorage.removeItem('user');
+        // Clear local storage
+        authAPI.logout();
         return { success: true };
     } catch (error) {
         logError('logoutUser', error);
@@ -45,16 +49,16 @@ export const logoutUser = async () => {
 };
 
 export const isAuthenticated = () => {
-    const session = localStorage.getItem('appwrite_session');
-    return !!session;
+    const token = localStorage.getItem('admin_token');
+    return !!token;
 };
 
 export const getCurrentUser = () => {
     try {
-        const userString = localStorage.getItem('user');
+        const userString = localStorage.getItem('admin_user');
         if (!userString) return null;
         const user = JSON.parse(userString);
-        console.log('Current user:', user);
+        console.log('Current admin user:', user);
         return user;
     } catch (error) {
         logError('getCurrentUser', error);
@@ -66,10 +70,28 @@ export const getUserId = () => {
     try {
         const user = getCurrentUser();
         if (!user) return null;
-        console.log('User ID:', user.$id);
-        return user.$id;
+        console.log('Admin ID:', user.id);
+        return user.id;
     } catch (error) {
         logError('getUserId', error);
         return null;
+    }
+};
+
+// New function to validate token with backend
+export const validateToken = async () => {
+    try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            return { valid: false };
+        }
+
+        const response = await authAPI.getCurrentUser();
+        return { valid: true, user: response.admin };
+    } catch (error) {
+        logError('validateToken', error);
+        // If token is invalid, clear it
+        authAPI.logout();
+        return { valid: false };
     }
 };

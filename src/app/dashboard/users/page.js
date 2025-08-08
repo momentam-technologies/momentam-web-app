@@ -76,7 +76,7 @@ const UsersPage = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await deleteUser(userToDelete.$id);
+      await deleteUser(userToDelete._id || userToDelete.$id);
       toast.success("User deleted successfully");
       fetchUsers();
     } catch (error) {
@@ -116,7 +116,7 @@ const UsersPage = () => {
     if (selectedUsers.length === users.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(users.map((user) => user.$id));
+      setSelectedUsers(users.map((user) => user._id || user.$id));
     }
   };
 

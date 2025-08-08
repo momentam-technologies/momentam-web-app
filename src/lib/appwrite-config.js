@@ -2,28 +2,26 @@ import { Client, Databases } from 'appwrite';
 
 // Configuration
 export const config = {
-    endpoint: 'https://cloud.appwrite.io/v1',
-    user: {
-        projectId: '66d00db0003702a664b7',
-        databaseId: '66d00ed8003231569fd0',
-        collections: {
-            users: '66d00f0f00399b6036fd',
-            photos: '66d00f2c002f105a9682',
-            bookings: '66f155ee0008ff041e8b',
-            notifications: '66fead61001e5ff6b52d'
-        }
+  endpoint: "https://fra.cloud.appwrite.io/v1",
+  user: {
+    projectId: "68060bf7002c64e0caab",
+    databaseId: "68060caa003a4a007b23",
+    collections: {
+      users: "68060cd300002f4b4a22",
+      bookings: "68060d3b0034d04074e4",
+      notifications: "68060d8600186ab097a1",
     },
-    photographer: {
-        projectId: '66f66b4100323a1b831f',
-        databaseId: '66f66c740016da106c49',
-        collections: {
-            users: '66f66c970021be082279',
-            livePhotographers: '66f703a5001bcd7be8a9',
-            notifications: '670302070011aa1a320f',
-            uploadedPhotos: '6704f38c001529b8ddbf',
-            editedPhotos: '6704f38c001529b8ddbg'
-        }
-    }
+  },
+  photographer: {
+    projectId: "6806248a0039b8e7044a",
+    databaseId: "68062571001fb9f9d619",
+    collections: {
+      photographers: "68066515003b4dde4c23",
+      livePhotographers: "6806637e0012de889a62",
+      notifications: "680626b6000a303bdf3a",
+      uploadedPhotos: "68062595001fef2f1329",
+    },
+  },
 };
 
 // Initialize clients

@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
 import { IconBookmark, IconUserCheck, IconUserPlus, IconCamera, IconActivity, 
          IconFilter, IconSearch, IconDotsVertical, IconClock } from '@tabler/icons-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import { safeFormatDate } from '@/utils/dateUtils';
 
 const RecentActivitiesCard = ({ activities, loadMoreActivities }) => {
   return (
@@ -100,7 +100,7 @@ const RecentActivitiesCard = ({ activities, loadMoreActivities }) => {
                   </p>
                   <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                     <IconClock size={16} className="mr-1" />
-                    {format(new Date(activity.time), 'MMM dd, yyyy - HH:mm')}
+                    {safeFormatDate(activity.time, 'MMM dd, yyyy - HH:mm')}
                   </div>
                 </div>
               </div>

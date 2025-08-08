@@ -3,29 +3,27 @@ import axios from 'axios';
 
 // Configuration
 const config = {
-    endpoint: 'https://cloud.appwrite.io/v1',
-    photographer: {
-        projectId: '66f66b4100323a1b831f',
-        databaseId: '66f66c740016da106c49',
-        userCollectionId: '66f66c970021be082279',
-        livePhotographersCollectionId: '66f703a5001bcd7be8a9',
-        notificationCollectionId: '670302070011aa1a320f',
-        uploadedPhotosCollectionId: '6704f38c001529b8ddbf',
-    },
-    user: {
-        projectId: '66d00db0003702a664b7',
-        databaseId: '66d00ed8003231569fd0',
-        userCollectionId: '66d00f0f00399b6036fd',
-        photoCollectionId: '66d00f2c002f105a9682',
-        storageId: '66d0104d00282cbfc0c8',
-        bookingsCollectionId: '66f155ee0008ff041e8b',
-        notificationCollectionId: '66fead61001e5ff6b52d',
-    },
-    admin: {
-        projectId: 'your_admin_project_id',
-        databaseId: 'your_admin_database_id',
-        userCollectionId: 'your_admin_user_collection_id',
-    }
+  endpoint: "https://fra.cloud.appwrite.io/v1",
+  photographer: {
+    projectId: "6806248a0039b8e7044a",
+    databaseId: "68062571001fb9f9d619",
+    photographersCollectionId: "66f66c970021be082279",
+    livePhotographersCollectionId: "6806637e0012de889a62",
+    notificationCollectionId: "680626b6000a303bdf3a",
+    uploadedPhotosCollectionId: "68062595001fef2f1329",
+  },
+  user: {
+    projectId: "68060bf7002c64e0caab",
+    databaseId: "68060caa003a4a007b23",
+    userCollectionId: "68060cd300002f4b4a22",
+    bookingsCollectionId: "68060d3b0034d04074e4",
+    notificationCollectionId: "68060d8600186ab097a1",
+  },
+  admin: {
+    projectId: "your_admin_project_id",
+    databaseId: "your_admin_database_id",
+    userCollectionId: "your_admin_user_collection_id",
+  },
 };
 
 // Initialize Appwrite clients
@@ -257,7 +255,7 @@ export const getUserStats = async () => {
             ),
             photographerDatabases.listDocuments(
                 config.photographer.databaseId,
-                config.photographer.userCollectionId
+                config.photographer.photographersCollectionId
             ),
             userDatabases.listDocuments(
                 config.user.databaseId,
@@ -384,7 +382,7 @@ export const subscribeToRealtimeUpdates = (callback) => {
         });
 
         // Subscribe to photographer updates
-        const photographerSubscription = photographerClient.subscribe(`databases.${config.photographer.databaseId}.collections.${config.photographer.userCollectionId}.documents`, response => {
+        const photographerSubscription = photographerClient.subscribe(`databases.${config.photographer.databaseId}.collections.${config.photographer.photographersCollectionId}.documents`, response => {
             if (response.events.includes('databases.*.collections.*.documents.*.create') ||
                 response.events.includes('databases.*.collections.*.documents.*.update') ||
                 response.events.includes('databases.*.collections.*.documents.*.delete')) {

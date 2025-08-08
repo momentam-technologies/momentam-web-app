@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import bcrypt from "bcryptjs";
+// import bcrypt from "bcryptjs";
 // import { addAdminUser, getAdminUsers } from "@/lib/appwrite";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { signUpUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { useRouter } from "next/navigation";
@@ -26,15 +27,14 @@ export default function SetupPage() {
   // }, [router]);
 
   const handleSubmit = async (e) => {
-    // e.preventDefault();
-    // try {
-    //   const hashedPassword = await bcrypt.hash(password, 10);
-    //   await addAdminUser({ name, email, password: hashedPassword, role: "superadmin" });
-    //   router.push("/login"); // Redirect to login after creation
-    // } catch (error) {
-    //   setError("Failed to create super admin. Please try again.");
-    //   console.error("Error creating super admin:", error);
-    // }
+    e.preventDefault();
+    try {
+      await signUpUser(email, password, name);
+      router.push("/login"); // Redirect to login after creation
+    } catch (error) {
+      setError("Failed to create super admin. Please try again.");
+      console.error("Error creating super admin:", error);
+    }
   };
 
   return (

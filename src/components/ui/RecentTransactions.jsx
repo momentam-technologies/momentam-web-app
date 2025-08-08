@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
 import { IconArrowUpRight, IconDotsVertical, IconDownload, IconFilter, IconSearch, IconSortAscending, IconCurrencyDollar } from '@tabler/icons-react';
+import { safeFormatDate } from '@/utils/dateUtils';
 
 const RecentTransactionsCard = ({ transactions, onViewAllTransactions }) => {
   return (
@@ -100,7 +100,7 @@ const RecentTransactionsCard = ({ transactions, onViewAllTransactions }) => {
                         •
                       </span>
                       <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {format(new Date(transaction.date), 'MMM dd, yyyy - HH:mm')}
+                        {safeFormatDate(transaction.date, 'MMM dd, yyyy - HH:mm')}
                       </span>
                     </div>
                   </div>
