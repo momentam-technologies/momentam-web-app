@@ -1,19 +1,35 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { IconSearch, IconFilter, IconPhoto, IconDownload, IconRefresh, IconCalendar, IconClock, IconCheck, IconX } from '@tabler/icons-react';
-import { getPhotosByBookings, getPhotoStats } from '@/lib/photos';
-import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
-import dynamic from 'next/dynamic';
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  IconSearch,
+  IconFilter,
+  IconPhoto,
+  IconDownload,
+  IconRefresh,
+  IconCalendar,
+  IconClock,
+  IconCheck,
+  IconX,
+} from "@tabler/icons-react";
+import { getPhotosByBookings, getPhotoStats } from "@/lib/photos";
+import { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import { format } from 'date-fns';
-import { safeFormatDate } from '@/utils/dateUtils';
-import DashboardCard from '@/components/ui/DashboardCard';
+import { format } from "date-fns";
+import { safeFormatDate } from "@/utils/dateUtils";
+import DashboardCard from "@/components/ui/DashboardCard";
 
 // Dynamically import components
-const BookingPhotosModal = dynamic(() => import('@/components/ui/BookingPhotosModal'), { ssr: false });
-const BulkPhotoEditor = dynamic(() => import('@/components/ui/BulkPhotoEditor'), { ssr: false });
+const BookingPhotosModal = dynamic(
+  () => import("@/components/ui/BookingPhotosModal"),
+  { ssr: false },
+);
+const BulkPhotoEditor = dynamic(
+  () => import("@/components/ui/BulkPhotoEditor"),
+  { ssr: false },
+);
 
 const PhotosPage = () => {
   const [bookings, setBookings] = useState([]);
@@ -49,7 +65,7 @@ const PhotosPage = () => {
         getPhotosByBookings(
           bookingsPerPage,
           (currentPage - 1) * bookingsPerPage,
-          filters
+          filters,
         ),
         getPhotoStats(),
       ]);
@@ -209,7 +225,7 @@ const PhotosPage = () => {
               {booking.photos.slice(0, 4).map((photo, index) => (
                 <div key={photo._id || photo.$id} className="relative">
                   <Image
-                    src={photo.photoUrl}
+                    src={photo.thumbnailUrl || photo.photoUrl}
                     alt={`Preview ${index + 1}`}
                     layout="fill"
                     objectFit="cover"
@@ -225,7 +241,7 @@ const PhotosPage = () => {
                   {booking.client.name}
                 </h3>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {safeFormatDate(booking.booking.date, "PP")}
+                  {safeFormatDate(booking.booking.$createdAt || booking.booking.created || booking.booking.date || booking.photos?.[0]?.uploadDate, "PPP")}
                 </span>
               </div>
 

@@ -112,8 +112,8 @@ const BookingDetailsModal = ({ booking, onClose }) => {
 
           {/* Booking Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InfoItem icon={IconCalendar} label="Date" value={safeFormatDate(booking.date, 'PPP')} />
-            <InfoItem icon={IconClock} label="Time" value={safeFormatDate(booking.date, 'p')} />
+            <InfoItem icon={IconCalendar} label="Date" value={safeFormatDate(booking.$createdAt || booking.created || booking.date, 'PPP')} />
+            <InfoItem icon={IconClock} label="Time" value={safeFormatDate(booking.$createdAt || booking.created || booking.date, 'p')} />
             <InfoItem icon={IconMapPin} label="Location" value={booking.location} />
             <InfoItem icon={IconCurrencyDollar} label="Price" value={`TZS ${parseFloat(booking.price).toLocaleString()}`} />
           </div>

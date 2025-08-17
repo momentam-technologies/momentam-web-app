@@ -62,7 +62,7 @@ const BulkPhotoEditor = ({ photos, onClose, onSave }) => {
             {/* Main Preview */}
             <div className="relative flex-1 bg-neutral-900 rounded-lg overflow-hidden mb-4">
               <Image
-                src={previewPhoto.photoUrl}
+                src={previewPhoto.thumbnailUrl || previewPhoto.photoUrl}
                 alt="Preview"
                 layout="fill"
                 objectFit="contain"
@@ -81,7 +81,7 @@ const BulkPhotoEditor = ({ photos, onClose, onSave }) => {
                   }`}
                 >
                   <Image
-                    src={photo.photoUrl}
+                    src={photo.thumbnailUrl || photo.photoUrl}
                     alt="Thumbnail"
                     layout="fill"
                     objectFit="cover"

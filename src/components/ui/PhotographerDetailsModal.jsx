@@ -129,7 +129,7 @@ const PhotographerDetailsModal = ({ photographer, onClose }) => {
                       <div>
                         <p className="font-medium">{booking.package}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(new Date(booking.date), 'PPp')}
+                          {format(new Date(booking.$createdAt || booking.created || booking.date), 'PPp')}
                         </p>
                       </div>
                       <span className={`px-2 py-1 text-xs rounded-full ${

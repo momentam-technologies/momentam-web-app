@@ -25,6 +25,7 @@ import {
   downloadPhoto,
   replacePhoto,
 } from "@/lib/photos";
+import { validateFileSize, validateFileFormat } from "@/lib/imageUtils";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 
@@ -38,7 +39,11 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [viewMode, setViewMode] = useState("original"); // 'original' or 'edited'
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   const handleStatusUpdate = async (photoId, status) => {
     try {
@@ -96,7 +101,23 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
         selectedPhotos.includes(photo.$id)
       );
       const formattedPhotos = photos.map((photo) => {
-        return { url: photo.photoUrl, photoId: photo.$id };
+        // Use original filename from database if available, otherwise extract from URL
+        let fileName = photo.fileName;
+        if (!fileName) {
+          // Extract extension from photoUrl if fileName is not available
+          const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
+          const pathParts = urlPath.split('/');
+          const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
+          const filenameParts = filename.split('.');
+          const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
+          fileName = `photo_${photo.$id}.${extension}`;
+        }
+        
+        return { 
+          url: photo.photoUrl, 
+          photoId: photo.$id,
+          fileName: fileName 
+        };
       });
 
       await bulkDownloadAsZip(formattedPhotos);
@@ -114,22 +135,43 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     
+    // Validate files
+    for (const file of files) {
+      if (!validateFileSize(file)) {
+        toast.error(`File "${file.name}" exceeds 60MB limit`);
+        return;
+      }
+      
+      if (!validateFileFormat(file)) {
+        toast.error(`File "${file.name}" is not a valid image format (JPG, PNG, WebP)`);
+        return;
+      }
+    }
+    
     // If photos are selected, replace them. Otherwise, upload new photos
     if (selectedPhotos.length > 0) {
       // Replace selected photos
       try {
-        setIsProcessing(true);
+        console.log(`🔄 Starting replacement of ${Math.min(files.length, selectedPhotos.length)} photo(s)`);
+        
         for (let i = 0; i < Math.min(files.length, selectedPhotos.length); i++) {
-          await handleReplacePhoto(selectedPhotos[i], files[i]);
+          const photoId = selectedPhotos[i];
+          const file = files[i];
+          
+          console.log(`🔄 Replacing photo ${i + 1}/${Math.min(files.length, selectedPhotos.length)}:`, {
+            photoId,
+            fileName: file.name,
+            fileSize: (file.size / 1024 / 1024).toFixed(2) + 'MB'
+          });
+          
+          await handleReplacePhoto(photoId, file);
         }
-        toast.success("Photos replaced successfully");
+        
         setSelectedPhotos([]);
         onUpdate();
       } catch (error) {
         console.error("Error replacing photos:", error);
-        toast.error("Failed to replace photos");
-      } finally {
-        setIsProcessing(false);
+        toast.error(error.message || "Failed to replace photos");
       }
     } else {
       // Upload new photos (existing functionality)
@@ -157,7 +199,28 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   const handleDownloadPhoto = async (photo) => {
     try {
       setIsProcessing(true);
-      const fileName = photo.fileName || `photo_${photo.$id}.jpg`;
+      
+      // Use original filename from database if available, otherwise extract from URL
+      let fileName = photo.fileName;
+      if (!fileName) {
+        // Extract extension from photoUrl if fileName is not available
+        const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
+        const pathParts = urlPath.split('/');
+        const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
+        const filenameParts = filename.split('.');
+        const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
+        fileName = `photo_${photo.$id}.${extension}`;
+        
+        console.log('🔍 [Download] Extension extraction:', {
+          originalUrl: photo.photoUrl,
+          extractedFilename: filename,
+          extractedExtension: extension,
+          finalFileName: fileName
+        });
+      } else {
+        console.log('🔍 [Download] Using original filename from database:', fileName);
+      }
+      
       await downloadPhoto(photo.photoUrl, fileName);
       toast.success("Photo downloaded successfully");
     } catch (error) {
@@ -168,18 +231,43 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     }
   };
 
-  // Function to handle photo replacement
+  // Function to handle photo replacement with progress
   const handleReplacePhoto = async (photoId, file) => {
     try {
-      setIsProcessing(true);
+      setIsUploading(true);
+      setUploadingPhotoId(photoId);
+      setUploadProgress(0);
+      
+      console.log('🔄 Starting photo replacement for:', photoId);
+      
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + Math.random() * 10;
+        });
+      }, 500);
+      
       await replacePhoto(photoId, file);
-      toast.success("Photo replaced successfully");
-      onUpdate();
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      // Small delay to show 100% completion
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadingPhotoId(null);
+        setUploadProgress(0);
+        toast.success("Photo replaced successfully");
+        onUpdate();
+      }, 500);
+      
     } catch (error) {
       console.error("Error replacing photo:", error);
-      toast.error("Failed to replace photo");
-    } finally {
-      setIsProcessing(false);
+      setIsUploading(false);
+      setUploadingPhotoId(null);
+      setUploadProgress(0);
+      toast.error(error.message || "Failed to replace photo");
     }
   };
 
@@ -202,14 +290,14 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
       >
         <div className="sticky top-0 z-20">
           {/* Header */}
-          <div className="p-4 border-b bg-white border-gray-200 dark:border-neutral-700">
+          <div className="p-4 border-b bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {booking.client.name}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {safeFormatDate(booking.booking.date, "PPP")}
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {safeFormatDate(booking.booking.$createdAt || booking.booking.created || booking.booking.date || booking.photos?.[0]?.uploadDate, "PPP")}
                 </p>
               </div>
               <button
@@ -246,6 +334,16 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 type="file"
                 ref={fileInputRef}
                 multiple
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+              
+              {/* Edit/Replace input */}
+              <input
+                type="file"
+                ref={editFileInputRef}
+                accept="image/*"
                 style={{ display: "none" }}
                 onChange={handleFileChange}
               />
@@ -259,23 +357,7 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                 <span>{selectedPhotos.length > 0 ? `Replace ${selectedPhotos.length} Photo${selectedPhotos.length > 1 ? 's' : ''}` : 'Upload Photos'}</span>
               </button>
 
-              {selectedPhotos.length > 0 && (
-                <button
-                  onClick={() => {
-                    const photos = booking.photos.filter((photo) =>
-                      selectedPhotos.includes(photo.$id)
-                    );
-                    const formattedPhotos = photos.map((photo) => {
-                      return { url: photo.photoUrl, photoId: photo.$id };
-                    });
-                    bulkDownloadAsZip(formattedPhotos);
-                  }}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center space-x-2"
-                >
-                  <IconDownload size={20} />
-                  <span>Download Selected</span>
-                </button>
-              )}
+
 
               <button
                 onClick={handleSelectAll}
@@ -370,12 +452,21 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                   src={
                     viewMode === "edited" && photo.editedVersion
                       ? photo.editedVersion.editedUrl
-                      : photo.photoUrl
+                      : photo.thumbnailUrl || photo.photoUrl // Use thumbnail if available, fallback to original
                   }
                   alt="Photo"
                   layout="fill"
                   objectFit="cover"
                   className="rounded-lg"
+                  onLoad={() => {
+                    console.log('🖼️ Photo loaded:', {
+                      photoId: photo.$id,
+                      thumbnailUrl: photo.thumbnailUrl,
+                      photoUrl: photo.photoUrl,
+                      viewMode,
+                      hasEditedVersion: !!photo.editedVersion
+                    });
+                  }}
                 />
 
                 {/* Status Badge */}
@@ -398,26 +489,69 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                   </div>
                 )}
 
+                {/* Upload Progress Overlay */}
+                {isUploading && uploadingPhotoId === photo.$id && (
+                  <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-lg z-20">
+                    <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 w-48">
+                      <div className="text-center mb-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Replacing Photo...
+                        </p>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                        {Math.round(uploadProgress)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Actions Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
+                <div className={`absolute inset-0 bg-black/50 transition-opacity rounded-lg flex items-center justify-center space-x-2 ${
+                  isUploading && uploadingPhotoId === photo.$id ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                }`}>
                   <button
                     onClick={() => handleDownloadPhoto(photo)}
-                    className="p-2 bg-gray-500 text-white rounded-full hover:bg-gray-600"
+                    className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
                     title="Download"
                   >
                     <IconDownload size={20} />
                   </button>
                   <button
                     onClick={() => {
-                      alert('Replace button clicked for photo: ' + photo.$id); // Temporary alert for debugging
+                      setSelectedPhotos([photo.$id]);
+                      setShowBulkEditor(true);
+                    }}
+                    className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+                    title="Edit"
+                  >
+                    <IconEdit size={20} />
+                  </button>
+                  <button
+                    onClick={() => {
                       console.log('🔄 Replace button clicked for photo:', photo.$id);
                       setSelectedPhotos([photo.$id]);
                       editFileInputRef.current.click();
                     }}
-                    className="p-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+                    className={`p-2 rounded-full transition-colors ${
+                      isUploading && uploadingPhotoId === photo.$id
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-purple-500 hover:bg-purple-600'
+                    } text-white`}
                     title="Replace"
+                    disabled={isUploading && uploadingPhotoId === photo.$id}
                   >
-                    <IconUpload size={20} />
+                    {isUploading && uploadingPhotoId === photo.$id ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <IconUpload size={20} />
+                    )}
                   </button>
                   <button
                     onClick={() => handleStatusUpdate(photo.$id, "approved")}
@@ -432,16 +566,6 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
                     title="Reject"
                   >
                     <IconReject size={20} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedPhotos([photo.$id]);
-                      setShowBulkEditor(true);
-                    }}
-                    className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
-                    title="Edit"
-                  >
-                    <IconEdit size={20} />
                   </button>
                 </div>
               </div>

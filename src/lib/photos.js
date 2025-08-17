@@ -1,4 +1,36 @@
 import { api } from './api';
+import { generateThumbnail, validateFileSize, validateFileFormat, getMimeType, isRawFile } from './imageUtils';
+
+// API configuration for admin portal
+const API_BASE_URL = "https://payment.momentam.io/api";
+
+// Helper function to extract file extension from URL or filename
+const extractFileExtension = (url, fileName) => {
+  // First try to use the fileName if available
+  if (fileName) {
+    const fileNameParts = fileName.split('.');
+    if (fileNameParts.length > 1) {
+      return fileNameParts[fileNameParts.length - 1].toLowerCase();
+    }
+  }
+  
+  // Fallback to extracting from URL
+  if (url) {
+    // Extract filename from URL path
+    const urlPath = url.split('?')[0].split('#')[0]; // Remove query params and fragments
+    const pathParts = urlPath.split('/');
+    const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
+    
+    // Extract extension from filename
+    const filenameParts = filename.split('.');
+    if (filenameParts.length > 1) {
+      return filenameParts[filenameParts.length - 1].toLowerCase();
+    }
+  }
+  
+  // Default fallback
+  return 'jpg';
+};
 
 // Get all photos grouped by bookings
 export const getPhotosByBookings = async (
@@ -137,7 +169,8 @@ export const bulkDownloadAsZip = async (files) => {
     
     // Download files individually for now (can be enhanced to ZIP later)
     for (const file of files) {
-      const fileName = file.photoId ? `photo_${file.photoId}.jpg` : 'photo.jpg';
+      // Use the fileName from the file object if available, otherwise generate one
+      const fileName = file.fileName || (file.photoId ? `photo_${file.photoId}.jpg` : 'photo.jpg');
       await downloadPhoto(file.url, fileName);
     }
     
@@ -165,16 +198,46 @@ export const uploadPhotoToFirebase = async (photo) => {
 // Replace photo with edited version
 export const replacePhoto = async (photoId, file) => {
   try {
-    console.log('🔄 FRONTEND: Replacing photo:', photoId);
+    console.log('🔄 FRONTEND: Replacing photo:', photoId, {
+      fileName: file.name,
+      fileSize: (file.size / 1024 / 1024).toFixed(2) + 'MB',
+      fileType: file.type
+    });
+    
+    // Validate file size and format
+    if (!validateFileSize(file)) {
+      throw new Error('File size exceeds 60MB limit');
+    }
+    
+    if (!validateFileFormat(file)) {
+      throw new Error('Invalid file format. Please select a valid image file (JPG, PNG, WebP).');
+    }
+    
+    // No thumbnail generation needed - backend will handle it
+    console.log('🔵 FRONTEND: Sending file for replacement (backend will generate thumbnail)');
     
     const formData = new FormData();
-    formData.append('photo', file);
+    
+    // Set proper MIME type for the file
+    const fileWithMimeType = new File([file], file.name, {
+      type: getMimeType(file.name),
+      lastModified: file.lastModified
+    });
+    
+    formData.append('photo', fileWithMimeType);
     
     // Get the token for authorization
     const token = localStorage.getItem("admin_token");
     
-    // Make direct axios request to bypass the JSON content-type issue
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/photos/${photoId}/replace`, {
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    console.log('🔵 FRONTEND: Sending replacement request with thumbnail...');
+    console.log('🔵 FRONTEND: API URL:', `${API_BASE_URL}/photos/${photoId}/replace`);
+    
+    // Make direct fetch request to bypass the JSON content-type issue
+    const response = await fetch(`${API_BASE_URL}/photos/${photoId}/replace`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -183,13 +246,38 @@ export const replacePhoto = async (photoId, file) => {
       body: formData,
     });
     
+    console.log('🔵 FRONTEND: Response status:', response.status);
+    console.log('🔵 FRONTEND: Response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to replace photo');
+      let errorMessage = `Server error: ${response.status}`;
+      
+      try {
+        const errorData = await response.json();
+        console.error('❌ FRONTEND: Server error response:', errorData);
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('❌ FRONTEND: Could not parse error response:', parseError);
+        
+        // Check if response is HTML (wrong endpoint)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          errorMessage = 'Wrong API endpoint - server returned HTML instead of JSON. Please check the API URL configuration.';
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
     
-    const result = await response.json();
-    console.log('✅ FRONTEND: Photo replaced successfully');
+    let result;
+    try {
+      result = await response.json();
+      console.log('✅ FRONTEND: Photo replaced successfully with thumbnail:', result);
+    } catch (parseError) {
+      console.error('❌ FRONTEND: Could not parse success response:', parseError);
+      throw new Error('Invalid response format from server');
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ FRONTEND: Error replacing photo:', error);
