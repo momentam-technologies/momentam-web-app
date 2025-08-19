@@ -1,26 +1,33 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { IconUsers, IconSearch, IconFilter, IconDotsVertical, IconUserCheck } from '@tabler/icons-react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import UserDetailsModal from './UserDetailsModal';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import {
+  IconUsers,
+  IconSearch,
+  IconFilter,
+  IconDotsVertical,
+  IconUserCheck,
+} from "@tabler/icons-react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import UserDetailsModal from "./UserDetailsModal";
 
 const LatestUsersCard = ({ users, loadMoreUsers }) => {
   const [selectedUser, setSelectedUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || user.type === filterType;
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === "all" || user.type === filterType;
     return matchesSearch && matchesFilter;
   });
 
   return (
     <>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
@@ -31,7 +38,10 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded-xl bg-indigo-500/10 dark:bg-indigo-400/10">
-                <IconUsers className="text-indigo-500 dark:text-indigo-400" size={24} />
+                <IconUsers
+                  className="text-indigo-500 dark:text-indigo-400"
+                  size={24}
+                />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
@@ -52,7 +62,7 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                 >
                   <IconFilter size={20} />
                 </motion.button>
-                
+
                 <AnimatePresence>
                   {isFilterMenuOpen && (
                     <motion.div
@@ -61,7 +71,7 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-2 z-10"
                     >
-                      {['all', 'photographer', 'user'].map((type) => (
+                      {["all", "photographer", "user"].map((type) => (
                         <button
                           key={type}
                           onClick={() => {
@@ -70,8 +80,8 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                           }}
                           className={`w-full text-left px-4 py-2 rounded-lg text-sm ${
                             filterType === type
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                              : 'hover:bg-gray-100 dark:hover:bg-neutral-700'
+                              ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400"
+                              : "hover:bg-gray-100 dark:hover:bg-neutral-700"
                           }`}
                         >
                           {type.charAt(0).toUpperCase() + type.slice(1)}s
@@ -101,7 +111,10 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                 placeholder="Search users..."
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <IconSearch className="absolute left-3 top-2.5 text-gray-400" size={20} />
+              <IconSearch
+                className="absolute left-3 top-2.5 text-gray-400"
+                size={20}
+              />
             </div>
           </div>
         </div>
@@ -121,8 +134,8 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
             className="p-4 space-y-3"
           >
             {filteredUsers.map((user, index) => (
-              <motion.div 
-                key={index} 
+              <motion.div
+                key={index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -131,7 +144,7 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                 tabIndex={0}
                 role="button"
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     setSelectedUser(user);
                   }
                 }}
@@ -139,13 +152,13 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <Image
-                      src={user.avatar || '/default-avatar.png'}
+                      src={user.avatar || "/default-avatar.png"}
                       alt={`Avatar for ${user.name}`}
                       width={48}
                       height={48}
                       className="rounded-xl"
                     />
-                    {user.type === 'photographer' && (
+                    {user.type === "photographer" && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                         <IconUserCheck size={12} className="text-white" />
                       </div>
@@ -155,18 +168,22 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
                     <p className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-500 transition-colors">
                       {user.name}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {user.email}
+                    </p>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      user.type === 'photographer' 
-                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                        : 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400'
-                    }`}>
-                      {user.type === 'photographer' ? 'Photographer' : 'User'}
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        user.type === "photographer"
+                          ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                          : "bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                      }`}
+                    >
+                      {user.type === "photographer" ? "Photographer" : "User"}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {new Date(user.$createdAt).toLocaleDateString()}
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -178,9 +195,9 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
 
       {/* User Details Modal */}
       {selectedUser && (
-        <UserDetailsModal 
-          user={selectedUser} 
-          onClose={() => setSelectedUser(null)} 
+        <UserDetailsModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
         />
       )}
     </>
