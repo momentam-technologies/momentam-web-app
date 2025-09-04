@@ -2,6 +2,7 @@ import axios from "axios";
 
 // API configuration for admin portal
 const API_BASE_URL = "https://payment.momentam.io/api";
+//const API_BASE_URL = "http://localhost:3001/api";
 
 console.log("🔧 API_BASE_URL:", API_BASE_URL);
 console.log("🔧 NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);

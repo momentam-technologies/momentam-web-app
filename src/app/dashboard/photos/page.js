@@ -48,10 +48,18 @@ const PhotosPage = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("completed");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const bookingsPerPage = 12;
+  const [bookingsPerPage, setBookingsPerPage] = useState(12);
+  const [totalBookings, setTotalBookings] = useState(0);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [filterStatus, searchTerm]);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -70,11 +78,13 @@ const PhotosPage = () => {
         getPhotoStats(),
       ]);
 
-      setBookings(bookingsData.bookings);
-      setTotalPages(Math.ceil(bookingsData.total / bookingsPerPage));
+
+      setBookings(bookingsData.bookings || []);
+      setTotalBookings(bookingsData.total || 0);
+      setTotalPages(Math.ceil((bookingsData.total || 0) / bookingsPerPage));
       setStats(statsData);
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      console.error("❌ PHOTOS PAGE: Error fetching bookings:", error);
       toast.error("Failed to load photos");
     } finally {
       setIsLoading(false);
@@ -202,6 +212,20 @@ const PhotosPage = () => {
             <option value="rejected">Rejected</option>
           </select>
 
+          <select
+            value={bookingsPerPage}
+            onChange={(e) => {
+              setBookingsPerPage(parseInt(e.target.value));
+              setCurrentPage(1); // Reset to first page when changing page size
+            }}
+            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={6}>6 per page</option>
+            <option value={12}>12 per page</option>
+            <option value={24}>24 per page</option>
+            <option value={48}>48 per page</option>
+          </select>
+
           <button
             onClick={fetchBookings}
             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -210,9 +234,29 @@ const PhotosPage = () => {
           </button>
         </div>
       </div>
+
       {/* Bookings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {bookings.map((booking) => (
+        {bookings.length === 0 && !isLoading ? (
+          <div className="col-span-full text-center py-12">
+            <IconPhoto size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No bookings found
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {searchTerm || filterStatus !== "all" 
+                ? "Try adjusting your search or filter criteria"
+                : "No bookings with photos are available at the moment"
+              }
+            </p>
+            <div className="text-sm text-gray-400 dark:text-gray-500">
+              <div>Current filters:</div>
+              <div>Status: {filterStatus}</div>
+              <div>Search: {searchTerm || 'None'}</div>
+            </div>
+          </div>
+        ) : (
+          bookings.map((booking) => (
           <motion.div
             key={booking.booking.id || booking.booking._id}
             initial={{ opacity: 0, y: 20 }}
@@ -263,11 +307,24 @@ const PhotosPage = () => {
               </div>
             </div>
           </motion.div>
-        ))}
+          ))
+        )}
       </div>
+      {/* Pagination Info */}
+      {totalBookings > 0 && (
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          Showing {((currentPage - 1) * bookingsPerPage) + 1} to {Math.min(currentPage * bookingsPerPage, totalBookings)} of {totalBookings} bookings
+          {totalPages > 1 && (
+            <span className="ml-2">
+              (Page {currentPage} of {totalPages})
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex justify-center items-center space-x-2">
+        <div className="mt-4 flex justify-center items-center space-x-2">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}

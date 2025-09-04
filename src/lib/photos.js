@@ -43,17 +43,42 @@ export const getPhotosByBookings = async (
     
     const params = new URLSearchParams({
       limit: limit.toString(),
-      offset: offset.toString()
+      offset: offset.toString(),
+      sort: 'desc', // Sort by latest first (descending order)
+      sortBy: 'createdAt', // Sort by creation date
+      hasPhotos: 'true' // Only return bookings that have photos
     });
 
     // Add filters to params
-    if (filters.status) params.append('status', filters.status);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.dateRange) params.append('dateRange', JSON.stringify(filters.dateRange));
+    if (filters.status) {
+      params.append('status', filters.status);
+    }
+    if (filters.search) {
+      params.append('search', filters.search);
+    }
+    if (filters.dateRange) {
+      params.append('dateRange', JSON.stringify(filters.dateRange));
+    }
 
-    const response = await api.get(`/photos/by-bookings?${params.toString()}`);
+    const fullUrl = `/photos/by-bookings?${params.toString()}`;
+
+    const response = await api.get(fullUrl);
+
+    // Filter out bookings without photos on the frontend as a backup
+    if (response?.bookings && Array.isArray(response.bookings)) {
+      const originalBookingsCount = response.bookings.length;
+      const bookingsWithPhotos = response.bookings.filter(booking => {
+        const hasPhotos = booking.photos && Array.isArray(booking.photos) && booking.photos.length > 0;
+        return hasPhotos;
+      });
+      
+      // Update the response with filtered bookings but preserve the backend's total count
+      response.bookings = bookingsWithPhotos;
+      // DO NOT modify response.total - keep the backend's correct total count
+      response.filteredCount = originalBookingsCount - bookingsWithPhotos.length; // Track how many were filtered out from this page
+    }
     
-    console.log('✅ FRONTEND: Photos by bookings received:', response.bookings.length);
+    console.log('✅ FRONTEND: Photos by bookings received:', response?.bookings?.length || 0);
     return response;
   } catch (error) {
     console.error('❌ FRONTEND: Error getting photos by bookings:', error);
