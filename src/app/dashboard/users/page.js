@@ -2,15 +2,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconUserPlus, IconSearch, IconFilter, IconDownload, IconRefresh, IconUsers } from '@tabler/icons-react';
-import {
-  getUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-  // banUser,
-  // unbanUser,
-  // getUserDetails
-} from '@/lib/users';
+// import {
+//   getUsers,
+//   createUser,
+//   updateUser,
+//   deleteUser,
+//   // banUser,
+//   // unbanUser,
+//   // getUserDetails
+// } from '@/lib/users';
 import dynamic from 'next/dynamic';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
@@ -39,13 +39,13 @@ const UsersPage = () => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const result = await getUsers(
-        usersPerPage,
-        (currentPage - 1) * usersPerPage
-      );
-      setUsers(result.users);
-      setTotalPages(Math.ceil(result.total / usersPerPage));
+      // setIsLoading(true);
+      // const result = await getUsers(
+      //   usersPerPage,
+      //   (currentPage - 1) * usersPerPage
+      // );
+      // setUsers(result.users);
+      // setTotalPages(Math.ceil(result.total / usersPerPage));
     } catch (error) {
       toast.error("Failed to fetch users");
       console.error(error);
@@ -61,9 +61,9 @@ const UsersPage = () => {
   const handleCreateUser = async (userData) => {
     try {
       // Implement user creation logic
-      await createUser(userData);
-      toast.success("User created successfully");
-      fetchUsers();
+      // await createUser(userData);
+      // toast.success("User created successfully");
+      // fetchUsers();
     } catch (error) {
       toast.error("Failed to create user");
       console.error(error);
@@ -76,9 +76,9 @@ const UsersPage = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await deleteUser(userToDelete._id || userToDelete.$id);
-      toast.success("User deleted successfully");
-      fetchUsers();
+      // await deleteUser(userToDelete._id || userToDelete.$id);
+      // toast.success("User deleted successfully");
+      // fetchUsers();
     } catch (error) {
       toast.error("Failed to delete user");
       console.error(error);
@@ -103,9 +103,9 @@ const UsersPage = () => {
 
   const handleUpdateUser = async (userId, userData) => {
     try {
-      await updateUser(userId, userData);
-      toast.success("User updated successfully");
-      fetchUsers(); // Refresh the users list
+      // await updateUser(userId, userData);
+      // toast.success("User updated successfully");
+      // fetchUsers(); // Refresh the users list
     } catch (error) {
       toast.error("Failed to update user");
       console.error(error);

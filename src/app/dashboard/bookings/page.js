@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconSearch, IconFilter, IconCalendar, IconRefresh, IconDownload, 
          IconChartBar, IconCurrencyDollar, IconUsers, IconClock, IconCalendarStats, IconChevronDown } from '@tabler/icons-react';
-import { getBookings, getBookingStats, getBookingTrends, updateBookingStatus } from '@/lib/bookings';
+// import { getBookings, getBookingStats, getBookingTrends, updateBookingStatus } from '@/lib/bookings';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -60,24 +60,24 @@ const BookingsPage = () => {
   // Fetch bookings data
   const fetchBookings = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const filters = {
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-        search: searchTerm || undefined,
-        dateRange: dateRange
-      };
+      // setIsLoading(true);
+      // const filters = {
+      //   status: filterStatus !== 'all' ? filterStatus : undefined,
+      //   search: searchTerm || undefined,
+      //   dateRange: dateRange
+      // };
 
-      const [bookingsData, statsData, trendsData] = await Promise.all([
-        getBookings(bookingsPerPage, (currentPage - 1) * bookingsPerPage, filters),
-        getBookingStats(),
-        getBookingTrends()
-      ]);
+      // const [bookingsData, statsData, trendsData] = await Promise.all([
+      //   getBookings(bookingsPerPage, (currentPage - 1) * bookingsPerPage, filters),
+      //   getBookingStats(),
+      //   getBookingTrends()
+      // ]);
 
-      setBookings(bookingsData.bookings);
-      setTotalPages(Math.ceil(bookingsData.total / bookingsPerPage));
-      setStats(statsData);
-      setTrends(trendsData);
-      setError(null);
+      // setBookings(bookingsData.bookings);
+      // setTotalPages(Math.ceil(bookingsData.total / bookingsPerPage));
+      // setStats(statsData);
+      // setTrends(trendsData);
+      // setError(null);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       setError('Failed to load bookings data');
@@ -85,7 +85,7 @@ const BookingsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filterStatus, searchTerm, dateRange]);
+  }, []);
 
   useEffect(() => {
     fetchBookings();
@@ -94,9 +94,9 @@ const BookingsPage = () => {
   // Handle status update
   const handleStatusUpdate = async (bookingId, newStatus) => {
     try {
-      await updateBookingStatus(bookingId, newStatus);
-      toast.success('Booking status updated successfully');
-      fetchBookings();
+      // await updateBookingStatus(bookingId, newStatus);
+      // toast.success('Booking status updated successfully');
+      // fetchBookings();
     } catch (error) {
       console.error('Error updating booking status:', error);
       toast.error('Failed to update booking status');

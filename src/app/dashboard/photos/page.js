@@ -12,7 +12,7 @@ import {
   IconCheck,
   IconX,
 } from "@tabler/icons-react";
-import { getPhotosByBookings, getPhotoStats } from "@/lib/photos";
+// import { getPhotosByBookings, getPhotoStats } from "@/lib/photos";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
@@ -63,26 +63,26 @@ const PhotosPage = () => {
 
   const fetchBookings = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const filters = {
-        status: filterStatus !== "all" ? filterStatus : undefined,
-        search: searchTerm || undefined,
-      };
+      // setIsLoading(true);
+      // const filters = {
+      //   status: filterStatus !== "all" ? filterStatus : undefined,
+      //   search: searchTerm || undefined,
+      // };
 
-      const [bookingsData, statsData] = await Promise.all([
-        getPhotosByBookings(
-          bookingsPerPage,
-          (currentPage - 1) * bookingsPerPage,
-          filters,
-        ),
-        getPhotoStats(),
-      ]);
+      // const [bookingsData, statsData] = await Promise.all([
+      //   getPhotosByBookings(
+      //     bookingsPerPage,
+      //     (currentPage - 1) * bookingsPerPage,
+      //     filters,
+      //   ),
+      //   getPhotoStats(),
+      // ]);
 
 
-      setBookings(bookingsData.bookings || []);
-      setTotalBookings(bookingsData.total || 0);
-      setTotalPages(Math.ceil((bookingsData.total || 0) / bookingsPerPage));
-      setStats(statsData);
+      // setBookings(bookingsData.bookings || []);
+      // setTotalBookings(bookingsData.total || 0);
+      // setTotalPages(Math.ceil((bookingsData.total || 0) / bookingsPerPage));
+      // setStats(statsData);
     } catch (error) {
       console.error("❌ PHOTOS PAGE: Error fetching bookings:", error);
       toast.error("Failed to load photos");

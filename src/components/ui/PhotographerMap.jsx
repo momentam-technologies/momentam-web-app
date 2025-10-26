@@ -22,7 +22,7 @@ import {
   ZoomControl,
 } from "react-leaflet";
 import L from "leaflet";
-import { getReadableAddress } from "@/lib/dashboard";
+// import { getReadableAddress } from "@/lib/dashboard";
 
 const AnimatedMarker = ({ children }) => (
   <motion.div
@@ -54,19 +54,19 @@ const PhotographerMap = ({
     console.log("Refreshing map data...");
   };
 
-  useEffect(() => {
-    const fetchAddresses = async () => {
-      const newAddresses = {};
-      for (const photographer of photographers) {
-        newAddresses[photographer.$id] = await getReadableAddress(
-          photographer.location,
-        );
-      }
-      setAddresses(newAddresses);
-    };
+  // useEffect(() => {
+  //   const fetchAddresses = async () => {
+  //     const newAddresses = {};
+  //     for (const photographer of photographers) {
+  //       newAddresses[photographer.$id] = await getReadableAddress(
+  //         photographer.location,
+  //       );
+  //     }
+  //     setAddresses(newAddresses);
+  //   };
 
-    fetchAddresses();
-  }, [photographers]);
+  //   fetchAddresses();
+  // }, [photographers]);
 
   return (
     <motion.div

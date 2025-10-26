@@ -1,17 +1,17 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { IconUsers, IconCamera, IconCalendar, IconCurrencyDollar, IconUserPlus, IconClock, IconBookmark, IconUserCheck, IconX, IconArrowUpRight, IconArrowDownRight, IconDotsVertical, IconSearch, IconFilter, IconSortAscending, IconSortDescending, IconZoomIn, IconUser, IconMail, IconPhone, IconStar, IconRefresh, IconDownload, IconMaximize, IconShare, IconInfoCircle, IconAlertTriangle, IconChartBar } from '@tabler/icons-react';
-import {
-  getDashboardStats,
-  getYearlyStats,
-  getActiveBookings,
-  getLatestUsers,
-  getRecentActivities,
-  getRecentTransactions,
-  getLivePhotographers,
-  getUserRequests,
-  subscribeToRealtimeUpdates  // Make sure this is imported
-} from '@/lib/dashboard';
+// import {
+//   getDashboardStats,
+//   getYearlyStats,
+//   getActiveBookings,
+//   getLatestUsers,
+//   getRecentActivities,
+//   getRecentTransactions,
+//   getLivePhotographers,
+//   getUserRequests,
+//   subscribeToRealtimeUpdates  // Make sure this is imported
+// } from '@/lib/dashboard';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isValid } from 'date-fns';
@@ -19,13 +19,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import dynamic from 'next/dynamic';
-import { getCurrentUser } from '@/lib/auth';
+// import { getCurrentUser } from '@/lib/auth';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { CSVLink } from "react-csv";
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import Joyride, { STATUS } from 'react-joyride';
-import { getReadableAddress } from '@/lib/appwrite';
 import UserDetailsModal from './UserDetailsModal';
 import TrendGraph from './TrendGraph';
 import DashboardCard from './DashboardCard';
@@ -280,48 +279,48 @@ export default function DashboardContent() {
     }
   }, []);
 
-  useEffect(() => {
-    setUser(getCurrentUser());
-  }, []);
+  // useEffect(() => {
+  //   setUser(getCurrentUser());
+  // }, []);
 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [
-        stats,
-        yearlyStatsData,
-        activeBookings,
-        latestUsers,
-        recentActivities,
-        recentTransactions,
-        livePhotographers,
-        userRequests
-      ] = await Promise.all([
-        getDashboardStats(),
-        getYearlyStats(),
-        getActiveBookings(),
-        getLatestUsers(5),
-        getRecentActivities(5),
-        getRecentTransactions(5),
-        getLivePhotographers(),
-        getUserRequests()
-      ]);
+      // const [
+      //   stats,
+      //   yearlyStatsData,
+      //   activeBookings,
+      //   latestUsers,
+      //   recentActivities,
+      //   recentTransactions,
+      //   livePhotographers,
+      //   userRequests
+      // ] = await Promise.all([
+      //   getDashboardStats(),
+      //   getYearlyStats(),
+      //   getActiveBookings(),
+      //   getLatestUsers(5),
+      //   getRecentActivities(5),
+      //   getRecentTransactions(5),
+      //   getLivePhotographers(),
+      //   getUserRequests()
+      // ]);
 
-      setStats({
-        totalUsers: stats.totalUsers,
-        totalPhotographers: stats.totalPhotographers,
-        totalBookings: stats.totalBookings,
-        revenue: stats.revenue
-      });
+      // setStats({
+      //   totalUsers: stats.totalUsers,
+      //   totalPhotographers: stats.totalPhotographers,
+      //   totalBookings: stats.totalBookings,
+      //   revenue: stats.revenue
+      // });
 
-      setChanges(stats.changes);
-      setYearOverYearChanges(yearlyStatsData.yearOverYearChanges);
-      setYearlyData(yearlyStatsData.yearlyData);
-      setLatestUsers(latestUsers);
-      setRecentActivities(recentActivities);
-      setRecentTransactions(recentTransactions);
-      setAvailablePhotographers(livePhotographers);
-      setUserRequests(userRequests);
+      // setChanges(stats.changes);
+      // setYearOverYearChanges(yearlyStatsData.yearOverYearChanges);
+      // setYearlyData(yearlyStatsData.yearlyData);
+      // setLatestUsers(latestUsers);
+      // setRecentActivities(recentActivities);
+      // setRecentTransactions(recentTransactions);
+      // setAvailablePhotographers(livePhotographers);
+      // setUserRequests(userRequests);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setError(`Failed to load dashboard data: ${error.message}`);
@@ -368,20 +367,20 @@ export default function DashboardContent() {
     }
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToRealtimeUpdates(handleRealtimeUpdate);
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [handleRealtimeUpdate]);
+  // useEffect(() => {
+  //   const unsubscribe = subscribeToRealtimeUpdates(handleRealtimeUpdate);
+  //   return () => {
+  //     if (unsubscribe) unsubscribe();
+  //   };
+  // }, [handleRealtimeUpdate]);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      getYearlyStats().then(({ yearlyData }) => setYearlyData(yearlyData));
-    }, 5 * 60 * 1000); // Refresh every 5 minutes
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     getYearlyStats().then(({ yearlyData }) => setYearlyData(yearlyData));
+  //   }, 5 * 60 * 1000); // Refresh every 5 minutes
 
-    return () => clearInterval(intervalId);
-  }, []);
+  //   return () => clearInterval(intervalId);
+  // }, []);
 
   const calculatePercentageChange = (oldValue, newValue) => {
     if (oldValue === 0 && newValue === 0) return 0;
@@ -389,17 +388,17 @@ export default function DashboardContent() {
     return Math.round(((newValue - oldValue) / oldValue) * 100);
   };
 
-  const loadMoreUsers = async () => {
-    const newUsers = await getLatestUsers(5, userPage * 5);
-    setLatestUsers([...latestUsers, ...newUsers]);
-    setUserPage(userPage + 1);
-  };
+  // const loadMoreUsers = async () => {
+  //   const newUsers = await getLatestUsers(5, userPage * 5);
+  //   setLatestUsers([...latestUsers, ...newUsers]);
+  //   setUserPage(userPage + 1);
+  // };
 
-  const loadMoreActivities = async () => {
-    const newActivities = await getRecentActivities(5, activityPage * 5);
-    setRecentActivities([...recentActivities, ...newActivities]);
-    setActivityPage(activityPage + 1);
-  };
+  // const loadMoreActivities = async () => {
+  //   const newActivities = await getRecentActivities(5, activityPage * 5);
+  //   setRecentActivities([...recentActivities, ...newActivities]);
+  //   setActivityPage(activityPage + 1);
+  // };
 
   useEffect(() => {
     console.log('Yearly Data:', yearlyData); // Add this to check the data structure
@@ -496,12 +495,11 @@ export default function DashboardContent() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
             <div className="latest-users">
-              <LatestUsersCard users={latestUsers} loadMoreUsers={loadMoreUsers} />
+              <LatestUsersCard users={latestUsers} />
             </div>
             <div className="recent-activity">
               <RecentActivitiesCard 
                 activities={recentActivities} 
-                loadMoreActivities={loadMoreActivities}
               />
             </div>
           </div>

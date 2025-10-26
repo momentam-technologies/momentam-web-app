@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconUserPlus, IconSearch, IconFilter, IconDownload, IconRefresh, IconCamera } from '@tabler/icons-react';
-import {
-  getPhotographers,
-  updatePhotographer,
-  deletePhotographer,
-  verifyPhotographer,
-  getPhotographerDetails
-} from '@/lib/photographers';
+// import {
+//   getPhotographers,
+//   updatePhotographer,
+//   deletePhotographer,
+//   verifyPhotographer,
+//   getPhotographerDetails
+// } from '@/lib/photographers';
 import dynamic from 'next/dynamic';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
@@ -34,13 +34,13 @@ const PhotographersPage = () => {
 
   const fetchPhotographers = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const result = await getPhotographers(
-        photographersPerPage,
-        (currentPage - 1) * photographersPerPage
-      );
-      setPhotographers(result.photographers);
-      setTotalPages(Math.ceil(result.total / photographersPerPage));
+      // setIsLoading(true);
+      // const result = await getPhotographers(
+      //   photographersPerPage,
+      //   (currentPage - 1) * photographersPerPage
+      // );
+      // setPhotographers(result.photographers);
+      // setTotalPages(Math.ceil(result.total / photographersPerPage));
     } catch (error) {
       toast.error("Failed to fetch photographers");
       console.error(error);
@@ -236,10 +236,10 @@ const PhotographersPage = () => {
             photographer={editingPhotographer}
             onUpdatePhotographer={async (data) => {
               try {
-                await updatePhotographer(editingPhotographer._id || editingPhotographer.$id, data);
-                toast.success("Photographer updated successfully");
-                fetchPhotographers();
-                setEditingPhotographer(null);
+                // await updatePhotographer(editingPhotographer._id || editingPhotographer.$id, data);
+                // toast.success("Photographer updated successfully");
+                // fetchPhotographers();
+                // setEditingPhotographer(null);
               } catch (error) {
                 toast.error("Failed to update photographer");
                 console.error(error);
@@ -253,10 +253,10 @@ const PhotographersPage = () => {
             onClose={() => setPhotographerToDelete(null)}
             onConfirm={async () => {
               try {
-                await deletePhotographer(photographerToDelete._id || photographerToDelete.$id);
-                toast.success("Photographer deleted successfully");
-                fetchPhotographers();
-                setPhotographerToDelete(null);
+                // await deletePhotographer(photographerToDelete._id || photographerToDelete.$id);
+                // toast.success("Photographer deleted successfully");
+                // fetchPhotographers();
+                // setPhotographerToDelete(null);
               } catch (error) {
                 toast.error("Failed to delete photographer");
                 console.error(error);

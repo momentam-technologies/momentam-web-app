@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IconBell, IconUser, IconSearch, IconChevronDown, IconSettings, IconLogout, IconSun, IconMoon, IconMessage } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { getUnreadMessagesCount } from '@/lib/appwrite'; // You'll need to implement this function
+// import { getUnreadMessagesCount } from '@/lib/appwrite'; // You'll need to implement this function
 import { useRouter } from 'next/navigation';
-import { logoutUser } from '@/lib/auth'; // Import the logoutUser function
+// import { logoutUser } from '@/lib/auth'; // Import the logoutUser function
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -15,15 +15,15 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchUnreadMessages = async () => {
-      const count = await getUnreadMessagesCount();
-      setUnreadMessages(count);
-    };
-    fetchUnreadMessages();
-    const interval = setInterval(fetchUnreadMessages, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   const fetchUnreadMessages = async () => {
+  //     const count = await getUnreadMessagesCount();
+  //     setUnreadMessages(count);
+  //   };
+  //   fetchUnreadMessages();
+  //   const interval = setInterval(fetchUnreadMessages, 60000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -48,7 +48,7 @@ const Navbar = () => {
   ];
 
   const handleLogout = async () => {
-    await logoutUser();
+    // await logoutUser();
     router.push('/login');
   };
 

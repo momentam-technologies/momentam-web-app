@@ -16,15 +16,15 @@ import {
   IconUpload,
   IconWand,
 } from "@tabler/icons-react";
-import {
-  updatePhoto,
-  bulkUpdatePhotos,
-  bulkDownloadAsZip,
-  uploadPhotoToFirebase,
-  saveEditedPhotos,
-  downloadPhoto,
-  replacePhoto,
-} from "@/lib/photos";
+// import {
+//   updatePhoto,
+//   bulkUpdatePhotos,
+//   bulkDownloadAsZip,
+//   uploadPhotoToFirebase,
+//   saveEditedPhotos,
+//   downloadPhoto,
+//   replacePhoto,
+// } from "@/lib/photos";
 import { validateFileSize, validateFileFormat } from "@/lib/imageUtils";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
@@ -47,10 +47,10 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
 
   const handleStatusUpdate = async (photoId, status) => {
     try {
-      setIsProcessing(true);
-      await updatePhoto(photoId, { status });
-      toast.success(`Photo ${status} successfully`);
-      onUpdate();
+      // setIsProcessing(true);
+      // await updatePhoto(photoId, { status });
+      // toast.success(`Photo ${status} successfully`);
+      // onUpdate();
     } catch (error) {
       console.error("Error updating photo status:", error);
       toast.error("Failed to update photo status");
@@ -66,15 +66,15 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     }
 
     try {
-      setIsProcessing(true);
-      if (action === "edit") {
-        setShowBulkEditor(true);
-      } else {
-        await bulkUpdatePhotos(selectedPhotos, { status: action });
-        toast.success(`${selectedPhotos.length} photos ${action}`);
-        setSelectedPhotos([]);
-        onUpdate();
-      }
+      // setIsProcessing(true);
+      // if (action === "edit") {
+      //   setShowBulkEditor(true);
+      // } else {
+      //   await bulkUpdatePhotos(selectedPhotos, { status: action });
+      //   toast.success(`${selectedPhotos.length} photos ${action}`);
+      //   setSelectedPhotos([]);
+      //   onUpdate();
+      // }
     } catch (error) {
       console.error("Error performing bulk action:", error);
       toast.error("Failed to update photos");
@@ -96,32 +96,32 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     }
 
     try {
-      setIsProcessing(true);
-      const photos = booking.photos.filter((photo) =>
-        selectedPhotos.includes(photo.$id)
-      );
-      const formattedPhotos = photos.map((photo) => {
-        // Use original filename from database if available, otherwise extract from URL
-        let fileName = photo.fileName;
-        if (!fileName) {
-          // Extract extension from photoUrl if fileName is not available
-          const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
-          const pathParts = urlPath.split('/');
-          const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
-          const filenameParts = filename.split('.');
-          const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
-          fileName = `photo_${photo.$id}.${extension}`;
-        }
+      // setIsProcessing(true);
+      // const photos = booking.photos.filter((photo) =>
+      //   selectedPhotos.includes(photo.$id)
+      // );
+      // const formattedPhotos = photos.map((photo) => {
+      //   // Use original filename from database if available, otherwise extract from URL
+      //   let fileName = photo.fileName;
+      //   if (!fileName) {
+      //     // Extract extension from photoUrl if fileName is not available
+      //     const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
+      //     const pathParts = urlPath.split('/');
+      //     const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
+      //     const filenameParts = filename.split('.');
+      //     const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
+      //     fileName = `photo_${photo.$id}.${extension}`;
+      //   }
         
-        return { 
-          url: photo.photoUrl, 
-          photoId: photo.$id,
-          fileName: fileName 
-        };
-      });
+      //   return { 
+      //     url: photo.photoUrl, 
+      //     photoId: photo.$id,
+      //     fileName: fileName 
+      //   };
+      // });
 
-      await bulkDownloadAsZip(formattedPhotos);
-      setSelectedPhotos([]);
+      // await bulkDownloadAsZip(formattedPhotos);
+      // setSelectedPhotos([]);
     } catch (error) {
       console.error("Error downloading photos:", error);
       toast.error("Failed to download photos");
@@ -176,18 +176,18 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
     } else {
       // Upload new photos (existing functionality)
       try {
-        const photos = await Promise.all(
-          files.map((file) => uploadPhotoToFirebase(file))
-        );
+        // const photos = await Promise.all(
+        //   files.map((file) => uploadPhotoToFirebase(file))
+        // );
 
-        const {success} = await saveEditedPhotos(photos);
+        // const {success} = await saveEditedPhotos(photos);
 
-        if (success) {
-          toast.success("Photos uploaded successfully");
-          onUpdate();
-        } else {
-          toast.error("Failed to upload photos");
-        }
+        // if (success) {
+        //   toast.success("Photos uploaded successfully");
+        //   onUpdate();
+        // } else {
+        //   toast.error("Failed to upload photos");
+        // }
       } catch (error) {
         console.error(error);
         toast.error("Failed to upload photos");
@@ -198,31 +198,31 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   // Function to handle single photo download
   const handleDownloadPhoto = async (photo) => {
     try {
-      setIsProcessing(true);
+      // setIsProcessing(true);
       
-      // Use original filename from database if available, otherwise extract from URL
-      let fileName = photo.fileName;
-      if (!fileName) {
-        // Extract extension from photoUrl if fileName is not available
-        const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
-        const pathParts = urlPath.split('/');
-        const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
-        const filenameParts = filename.split('.');
-        const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
-        fileName = `photo_${photo.$id}.${extension}`;
+      // // Use original filename from database if available, otherwise extract from URL
+      // let fileName = photo.fileName;
+      // if (!fileName) {
+      //   // Extract extension from photoUrl if fileName is not available
+      //   const urlPath = photo.photoUrl.split('?')[0].split('#')[0]; // Remove query params and fragments
+      //   const pathParts = urlPath.split('/');
+      //   const filename = pathParts[pathParts.length - 1]; // Get the last part (filename)
+      //   const filenameParts = filename.split('.');
+      //   const extension = filenameParts.length > 1 ? filenameParts[filenameParts.length - 1] : 'jpg';
+      //   fileName = `photo_${photo.$id}.${extension}`;
         
-        console.log('🔍 [Download] Extension extraction:', {
-          originalUrl: photo.photoUrl,
-          extractedFilename: filename,
-          extractedExtension: extension,
-          finalFileName: fileName
-        });
-      } else {
-        console.log('🔍 [Download] Using original filename from database:', fileName);
-      }
+      //   console.log('🔍 [Download] Extension extraction:', {
+      //     originalUrl: photo.photoUrl,
+      //     extractedFilename: filename,
+      //     extractedExtension: extension,
+      //     finalFileName: fileName
+      //   });
+      // } else {
+      //   console.log('🔍 [Download] Using original filename from database:', fileName);
+      // }
       
-      await downloadPhoto(photo.photoUrl, fileName);
-      toast.success("Photo downloaded successfully");
+      // await downloadPhoto(photo.photoUrl, fileName);
+      // toast.success("Photo downloaded successfully");
     } catch (error) {
       console.error("Error downloading photo:", error);
       toast.error("Failed to download photo");
@@ -234,33 +234,33 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
   // Function to handle photo replacement with progress
   const handleReplacePhoto = async (photoId, file) => {
     try {
-      setIsUploading(true);
-      setUploadingPhotoId(photoId);
-      setUploadProgress(0);
+      // setIsUploading(true);
+      // setUploadingPhotoId(photoId);
+      // setUploadProgress(0);
       
-      console.log('🔄 Starting photo replacement for:', photoId);
+      // console.log('🔄 Starting photo replacement for:', photoId);
       
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 10;
-        });
-      }, 500);
+      // // Simulate progress updates
+      // const progressInterval = setInterval(() => {
+      //   setUploadProgress(prev => {
+      //     if (prev >= 90) return prev;
+      //     return prev + Math.random() * 10;
+      //   });
+      // }, 500);
       
-      await replacePhoto(photoId, file);
+      // await replacePhoto(photoId, file);
       
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      // clearInterval(progressInterval);
+      // setUploadProgress(100);
       
-      // Small delay to show 100% completion
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadingPhotoId(null);
-        setUploadProgress(0);
-        toast.success("Photo replaced successfully");
-        onUpdate();
-      }, 500);
+      // // Small delay to show 100% completion
+      // setTimeout(() => {
+      //   setIsUploading(false);
+      //   setUploadingPhotoId(null);
+      //   setUploadProgress(0);
+      //   toast.success("Photo replaced successfully");
+      //   onUpdate();
+      // }, 500);
       
     } catch (error) {
       console.error("Error replacing photo:", error);
@@ -584,20 +584,20 @@ const BookingPhotosModal = ({ booking, onClose, onUpdate }) => {
             onClose={() => setShowBulkEditor(false)}
             onSave={async (enhancedPhotos) => {
               try {
-                await Promise.all(
-                  enhancedPhotos.map((photo) =>
-                    updatePhoto(photo.$id, {
-                      photoUrl: photo.enhancedUrl,
-                      isEnhanced: true,
-                      enhancedAt: new Date().toISOString(),
-                      settings: photo.settings,
-                    })
-                  )
-                );
-                toast.success("Photos enhanced successfully");
-                setShowBulkEditor(false);
-                setSelectedPhotos([]);
-                onUpdate();
+                // await Promise.all(
+                //   enhancedPhotos.map((photo) =>
+                //     updatePhoto(photo.$id, {
+                //       photoUrl: photo.enhancedUrl,
+                //       isEnhanced: true,
+                //       enhancedAt: new Date().toISOString(),
+                //       settings: photo.settings,
+                //     })
+                //   )
+                // );
+                // toast.success("Photos enhanced successfully");
+                // setShowBulkEditor(false);
+                // setSelectedPhotos([]);
+                // onUpdate();
               } catch (error) {
                 console.error("Error saving enhanced photos:", error);
                 toast.error("Failed to save enhanced photos");

@@ -5,7 +5,7 @@ import { IconBookmark, IconUserCheck, IconUserPlus, IconCamera, IconActivity,
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { safeFormatDate } from '@/utils/dateUtils';
 
-const RecentActivitiesCard = ({ activities, loadMoreActivities }) => {
+const RecentActivitiesCard = ({ activities }) => {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -64,7 +64,7 @@ const RecentActivitiesCard = ({ activities, loadMoreActivities }) => {
       <div className="h-[420px] overflow-y-auto">
         <InfiniteScroll
           dataLength={activities.length}
-          next={loadMoreActivities}
+          // next={loadMoreActivities}
           hasMore={true}
           loader={
             <div className="flex justify-center p-4">

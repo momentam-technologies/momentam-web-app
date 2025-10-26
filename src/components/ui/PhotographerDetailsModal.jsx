@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { IconX, IconRefresh, IconUser, IconMail, IconPhone, IconCalendar, 
          IconClock, IconBookmark, IconStar, IconMapPin, IconCamera, IconCurrencyDollar } from '@tabler/icons-react';
-import { getPhotographerDetails } from '@/lib/photographers';
+// import { getPhotographerDetails } from '@/lib/photographers';
 
 const InfoItem = ({ icon: Icon, label, value }) => (
   <motion.div 
@@ -37,14 +37,14 @@ const PhotographerDetailsModal = ({ photographer, onClose }) => {
     const fetchPhotographerDetails = async () => {
       setIsLoading(true);
       try {
-        const details = await getPhotographerDetails(photographer.$id);
-        setPhotographerDetails({
-          ...details,
-          totalBookings: details.stats?.totalBookings || 0,
-          completedBookings: details.stats?.completedBookings || 0,
-          totalEarnings: details.stats?.totalEarnings || 0,
-          rating: details.stats?.rating || 0
-        });
+        // const details = await getPhotographerDetails(photographer.$id);
+        // setPhotographerDetails({
+        //   ...details,
+        //   totalBookings: details.stats?.totalBookings || 0,
+        //   completedBookings: details.stats?.completedBookings || 0,
+        //   totalEarnings: details.stats?.totalEarnings || 0,
+        //   rating: details.stats?.rating || 0
+        // });
       } catch (error) {
         console.error('Error fetching photographer details:', error);
       } finally {

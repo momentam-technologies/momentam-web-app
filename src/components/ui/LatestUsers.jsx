@@ -11,7 +11,7 @@ import {
 import InfiniteScroll from "react-infinite-scroll-component";
 import UserDetailsModal from "./UserDetailsModal";
 
-const LatestUsersCard = ({ users, loadMoreUsers }) => {
+const LatestUsersCard = ({ users }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -123,7 +123,7 @@ const LatestUsersCard = ({ users, loadMoreUsers }) => {
         <div className="h-[420px] overflow-y-auto">
           <InfiniteScroll
             dataLength={filteredUsers.length}
-            next={loadMoreUsers}
+            // next={loadMoreUsers}
             hasMore={true}
             loader={
               <div className="flex justify-center p-4">
