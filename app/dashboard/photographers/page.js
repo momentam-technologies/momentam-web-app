@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { IconUserPlus, IconSearch, IconFilter, IconDownload, IconRefresh, IconCamera } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { getSession } from "next-auth/react";

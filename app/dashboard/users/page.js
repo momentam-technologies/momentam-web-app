@@ -308,52 +308,51 @@ const UsersPage = () => {
       />
 
       {/* Update Pagination */}
-      {
-        totalPages > 1 && (
-          <div className="mt-6 flex justify-center items-center space-x-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg ${currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
-                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
-                }`}
-            >
-              Previous
-            </button>
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center space-x-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded-lg ${currentPage === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+              : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+              }`}
+          >
+            Previous
+          </button>
 
-            {getPageNumbers().map((page, index) => (
-              <React.Fragment key={index}>
-                {typeof page === "number" ? (
-                  <button
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-4 py-2 rounded-lg ${currentPage === page
-                      ? "bg-blue-500 text-white"
-                      : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
-                      }`}
-                  >
-                    {page}
-                  </button>
-                ) : (
-                  <span className="px-2 text-gray-500">...</span>
-                )}
-              </React.Fragment>
-            ))}
+          {getPageNumbers().map((page, index) => (
+            <React.Fragment key={index}>
+              {typeof page === "number" ? (
+                <button
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-4 py-2 rounded-lg ${currentPage === page
+                    ? "bg-blue-500 text-white"
+                    : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+                    }`}
+                >
+                  {page}
+                </button>
+              ) : (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+            </React.Fragment>
+          ))}
 
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg ${currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
-                : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
-                }`}
-            >
-              Next
-            </button>
-          </div>
-        )
+          <button
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded-lg ${currentPage === totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:text-gray-500"
+              : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
+              }`}
+          >
+            Next
+          </button>
+        </div>
+      )
       }
 
       {/* Modals */}
