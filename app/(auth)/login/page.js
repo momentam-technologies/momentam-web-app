@@ -39,8 +39,6 @@ export default function LoginPage() {
 
     try {
       const result = await signIn("credentials", { redirect: false, email, password, callbackUrl });
-      console.log(result.url);
-
       if (result?.error) {
         console.error("Login failed:", result.error);
         toast.error(result.error || "Wrong credentials!");
