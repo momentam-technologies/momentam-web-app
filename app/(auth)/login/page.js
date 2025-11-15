@@ -40,9 +40,12 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", { redirect: false, email, password, callbackUrl });
       if (result?.error) {
-        console.error("Login failed:", result.error);
-        toast.error(result.error || "Wrong credentials!");
-        setError(result.error || "Invalid email or password");
+        // Any invalid credentials (or CredentialsSignin) → generic toast
+        const message = result.error === "CredentialsSignin"
+          ? "Invalid email or password"
+          : result.error;
+        toast.error(message);
+        setError(message);
       } else {
         toast.success("Welcome Back");
         router.push(callbackUrl);

@@ -30,18 +30,18 @@ const authOptions = {
                             accessToken: token,
                         };
                     }
-                    // If login fails but request succeeds, just return null
+
+                    // Invalid credentials (login failed)
                     return null;
                 } catch (error) {
                     console.error(error.response?.data);
 
-                    // If backend returned a 4xx, forward its message as NextAuth error
+                    // For expected login failures (4xx), just return null
                     if (error.response?.status >= 400 && error.response?.status < 500) {
-                        // Throw with a custom error message; NextAuth sets it in result.error
-                        throw new Error(error.response?.data?.message || "Invalid credentials");
+                        return null;
                     }
 
-                    // For other errors, throw normally
+                    // Unexpected server errors
                     throw new Error("Server error");
                 }
             },
