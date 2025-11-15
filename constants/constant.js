@@ -1,1 +1,1 @@
-export const SERVER_URI = "http://localhost:8000/api/v1"
+export const SERVER_URI = "https://momentam-api.onrender.com/api/v1"

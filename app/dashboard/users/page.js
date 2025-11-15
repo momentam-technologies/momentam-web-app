@@ -132,10 +132,17 @@ const UsersPage = () => {
 
   // Filtered users
   const filteredUsers = users.filter((user) => {
+    const name = user.name?.toLowerCase() || "";
+    const email = user.email?.toLowerCase() || "";
+
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === "all" || (filterType === "verified" ? user.verified : !user.verified);
+      name.includes(searchTerm.toLowerCase()) ||
+      email.includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      filterType === "all" ||
+      (filterType === "verified" ? user.verified : !user.verified);
+
     return matchesSearch && matchesFilter;
   });
 

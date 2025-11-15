@@ -15,7 +15,7 @@ const UsersTable = ({ users, onViewUser, onEditUser, onDeleteUser, selectedUsers
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedUsers.length === users.length}
+                  checked={users.length > 0 && selectedUsers.length === users.length}
                   onChange={onSelectAll}
                 />
               </div>
