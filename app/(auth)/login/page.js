@@ -40,10 +40,9 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", { redirect: false, email, password, callbackUrl });
       if (result?.error) {
-        // Any invalid credentials (or CredentialsSignin) → generic toast
-        const message = result.error === "CredentialsSignin"
-          ? "Invalid email or password"
-          : result.error;
+        const message =
+          result.user?.errorMessage || // <-- backend message for non-admin
+          (result.error === "CredentialsSignin" ? "Invalid email or password" : result.error);
         toast.error(message);
         setError(message);
       } else {
