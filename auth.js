@@ -30,16 +30,15 @@ const authOptions = {
                             accessToken: token,
                         };
                     }
-                    // Login failed: return backend message in object
-                    return { errorMessage: response.data.message || "Invalid credentials" };
+                    // Failed login → return null
+                    return null;
                 } catch (error) {
                     console.error(error.response?.data);
 
                     if (error.response?.status >= 400 && error.response?.status < 500) {
-                        // Return backend message safely
                         return { errorMessage: error.response?.data?.message || "Invalid credentials" };
                     }
-
+                    // Unexpected server errors
                     throw new Error("Server error");
                 }
             }
