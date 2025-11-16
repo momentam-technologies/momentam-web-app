@@ -36,7 +36,7 @@ const authOptions = {
                     console.error(error.response?.data);
 
                     if (error.response?.status >= 400 && error.response?.status < 500) {
-                        return { errorMessage: error.response?.data?.message || "Invalid credentials" };
+                        return null;
                     }
                     // Unexpected server errors
                     throw new Error("Server error");
