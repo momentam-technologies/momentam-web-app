@@ -1,1 +1,1 @@
-export const SERVER_URI = "https://momentam-api.onrender.com/api/v1"
+export const SERVER_URI = process.env.API_URL;
