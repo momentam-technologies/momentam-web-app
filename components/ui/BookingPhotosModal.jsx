@@ -295,7 +295,19 @@ const BookingPhotosModal = ({ booking, onClose, refreshPhotos: onUpdate }) => {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {booking.photos.map((photo) => (
-              <div key={photo._id} className="relative aspect-square group rounded-lg overflow-hidden">
+              <div key={photo._id}
+                className={`relative aspect-square group rounded-lg overflow-hidden cursor-pointer transition-all duration-200
+    ${selectedPhotos.includes(photo._id)
+                    ? "ring-4 ring-blue-500 scale-[0.97]"
+                    : "hover:scale-[0.98]"}`}
+                onClick={() => {
+                  setSelectedPhotos((prev) =>
+                    prev.includes(photo._id)
+                      ? prev.filter((id) => id !== photo._id)
+                      : [...prev, photo._id]
+                  );
+                }}
+              >
 
                 {/* Photo */}
                 <Image
@@ -304,13 +316,6 @@ const BookingPhotosModal = ({ booking, onClose, refreshPhotos: onUpdate }) => {
                   layout="fill"
                   objectFit="cover"
                   className="rounded-lg cursor-pointer"
-                  onClick={() => {
-                    setSelectedPhotos((prev) =>
-                      prev.includes(photo._id)
-                        ? prev.filter((id) => id !== photo._id)
-                        : [...prev, photo._id]
-                    );
-                  }}
                 />
 
                 {/* Uploading Overlay (shows live progress) */}

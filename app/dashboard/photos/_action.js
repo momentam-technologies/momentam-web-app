@@ -9,6 +9,7 @@ export async function getAllPhotos(accessToken) {
     try {
         const response = await axios.get(`${SERVER_URI}/photos/photos`, {
             headers: { Authorization: `Bearer ${accessToken}` },
+            timeout: 20000,
         });
 
         return response.data.data.map((p) => ({
@@ -66,6 +67,7 @@ export async function replacePhoto(accessToken, photoId, photoFile, thumbnailFil
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${accessToken}`,
                 },
+                timeout: 20000,
                 // Built-in upload progress
                 onUploadProgress: (progressEvent) => {
                     if (onProgress && progressEvent.total) {
@@ -93,6 +95,7 @@ export async function handleStatusUpdate(accessToken, photoId, status, clientId,
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                 },
+                timeout: 20000,
             })
 
             if (approveRes.status === 200) {
